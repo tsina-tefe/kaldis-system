@@ -1,6 +1,7 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function MyResultsShow({ response }: { response: any }) {
   const avg = response.question_responses.length
@@ -13,26 +14,27 @@ export default function MyResultsShow({ response }: { response: any }) {
   return (
     <AppLayout>
       <Head title="Evaluation Result" />
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">{response.evaluation?.name || 'Evaluation Result'}</h1>
-        </div>
-
+      <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
         <Card className="max-w-3xl">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Summary</CardTitle>
+            <CardAction>
+              <Link href={'/my-results'}>
+                <Button variant={'default'}>Go Back</Button>
+              </Link>
+            </CardAction>
           </CardHeader>
+          <hr />
           <CardContent>
             <div className="space-y-1 text-sm text-gray-700">
               <div>Evaluation Period: {response.evaluation_period || 'N/A'}</div>
-              <div>Evaluator: {response.evaluator || 'N/A'}</div>
               <div>Average Score: {avg ?? 'N/A'}</div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="max-w-3xl">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Question Scores</CardTitle>
           </CardHeader>
           <CardContent>

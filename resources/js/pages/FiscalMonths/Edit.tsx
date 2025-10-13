@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -11,7 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
 import type { FiscalMonth, EthiopianMonth } from '@/types/fiscal-month';
 import type { FiscalYear } from '@/types/fiscal-year';
 
@@ -42,21 +42,27 @@ export default function Edit({ fiscalMonth, fiscalYears, ethiopianMonths }: Prop
         }
     };
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Ethiopian Fiscal Months', href: '/fiscal-months' },
+        { title: 'Edit Fiscal Month', href: `/fiscal-months/${fiscalMonth.id}/edit` },
+    ];
+
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Fiscal Month" />
 
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('fiscal-months.index')}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <h1 className="text-3xl font-bold">Edit Ethiopian Fiscal Month</h1>
-                </div>
-
-                <Card className="p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <Card>
+                    <CardHeader className="flex items-center justify-between">
+                        <CardTitle>Edit Ethiopian Fiscal Month</CardTitle>
+                        <CardAction>
+                            <Link href={'/fiscal-months'}>
+                                <Button variant={'default'}>Go Back</Button>
+                            </Link>
+                        </CardAction>
+                    </CardHeader>
+                    <hr />
+                    <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="fiscal_year_id">Fiscal Year</Label>
@@ -136,15 +142,16 @@ export default function Edit({ fiscalMonth, fiscalYears, ethiopianMonths }: Prop
 
                         {/* Status removed */}
 
-                        <div className="flex gap-4">
+                        <div className="flex justify-end gap-4">
                             <Button type="submit" disabled={processing}>
                                 {processing ? 'Updating...' : 'Update Fiscal Month'}
                             </Button>
                             <Button type="button" variant="outline" asChild>
-                                <Link href={route('fiscal-months.index')}>Cancel</Link>
+                                <Link href={'/fiscal-months'}>Cancel</Link>
                             </Button>
                         </div>
                     </form>
+                    </CardContent>
                 </Card>
             </div>
         </AppLayout>

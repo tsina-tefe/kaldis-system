@@ -1,10 +1,10 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
@@ -18,21 +18,27 @@ export default function Create() {
         post(route('fiscal-years.store'));
     };
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Ethiopian Fiscal Years', href: '/fiscal-years' },
+        { title: 'Create Fiscal Year', href: '/fiscal-years/create' },
+    ];
+
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Fiscal Year" />
 
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('fiscal-years.index')}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <h1 className="text-3xl font-bold">Create Ethiopian Fiscal Year</h1>
-                </div>
-
-                <Card className="p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <Card>
+                    <CardHeader className="flex items-center justify-between">
+                        <CardTitle>Create Ethiopian Fiscal Year</CardTitle>
+                        <CardAction>
+                            <Link href={'/fiscal-years'}>
+                                <Button variant={'default'}>Go Back</Button>
+                            </Link>
+                        </CardAction>
+                    </CardHeader>
+                    <hr />
+                    <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="name">Fiscal Year Name</Label>
@@ -81,15 +87,16 @@ export default function Create() {
 
                         {/* Status removed */}
 
-                        <div className="flex gap-4">
+                        <div className="flex justify-end gap-4">
                             <Button type="submit" disabled={processing}>
                                 {processing ? 'Creating...' : 'Create Fiscal Year'}
                             </Button>
                             <Button type="button" variant="outline" asChild>
-                                <Link href={route('fiscal-years.index')}>Cancel</Link>
+                                <Link href={'/fiscal-years'}>Cancel</Link>
                             </Button>
                         </div>
                     </form>
+                    </CardContent>
                 </Card>
             </div>
         </AppLayout>

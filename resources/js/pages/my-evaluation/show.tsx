@@ -1,6 +1,6 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,15 +61,17 @@ export default function MyEvaluationShow({ evaluation, evaluationPeriods, evalua
   return (
     <AppLayout>
       <Head title={evaluation.name || 'Evaluate'} />
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">{evaluation.name || 'Evaluation'}</h1>
-        </div>
-
+      <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
         <Card className="max-w-4xl">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Fill Evaluation</CardTitle>
+            <CardAction>
+              <Link href={'/my-evaluation'}>
+                <Button variant={'default'}>Go Back</Button>
+              </Link>
+            </CardAction>
           </CardHeader>
+          <hr />
           <CardContent>
             <form onSubmit={submit} className="space-y-6">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -137,7 +139,7 @@ export default function MyEvaluationShow({ evaluation, evaluationPeriods, evalua
                 <InputError message={errors.question_responses as any} />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex justify-end gap-3">
                 <Button type="submit" disabled={processing}>Submit</Button>
               </div>
             </form>

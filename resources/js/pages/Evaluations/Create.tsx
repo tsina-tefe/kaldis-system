@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -11,7 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
 import type { EvaluatorGroup, EvaluatesGroup } from '@/types/evaluation';
 
 type Props = {
@@ -47,21 +47,27 @@ export default function Create({ evaluatorGroups, evaluatesGroups }: Props) {
         }
     };
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Evaluations', href: '/evaluations' },
+        { title: 'Create Evaluation', href: '/evaluations/create' },
+    ];
+
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Evaluation" />
 
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('evaluations.index')}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <h1 className="text-3xl font-bold">Create Evaluation</h1>
-                </div>
-
-                <Card className="p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <Card>
+                    <CardHeader className="flex items-center justify-between">
+                        <CardTitle>Create Evaluation</CardTitle>
+                        <CardAction>
+                            <Link href={'/evaluations'}>
+                                <Button variant={'default'}>Go Back</Button>
+                            </Link>
+                        </CardAction>
+                    </CardHeader>
+                    <hr />
+                    <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="name">Evaluation Name</Label>
@@ -155,15 +161,16 @@ export default function Create({ evaluatorGroups, evaluatesGroups }: Props) {
                             {errors.status && <p className="text-sm text-red-500">{errors.status}</p>}
                         </div>
 
-                        <div className="flex gap-4">
+                        <div className="flex justify-end gap-4">
                             <Button type="submit" disabled={processing}>
                                 {processing ? 'Creating...' : 'Create Evaluation'}
                             </Button>
                             <Button type="button" variant="outline" asChild>
-                                <Link href={route('evaluations.index')}>Cancel</Link>
+                                <Link href={'/evaluations'}>Cancel</Link>
                             </Button>
                         </div>
                     </form>
+                    </CardContent>
                 </Card>
             </div>
         </AppLayout>
