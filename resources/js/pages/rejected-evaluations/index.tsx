@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import TablePagination from '@/components/table-pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { CheckCircle, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { type BreadcrumbItem } from '@/types';
 
 interface EvaluationPeriod {
   id: number;
@@ -46,6 +47,8 @@ interface Props {
     last_page: number;
     per_page: number;
     total: number;
+    from: number;
+    to: number;
   };
   periods: EvaluationPeriod[];
   request: {
@@ -54,34 +57,33 @@ interface Props {
   };
 }
 
+const breadcrumbs: BreadcrumbItem[] = [
+  { title: 'Rejected Evaluations', href: '/rejected-evaluations' },
+];
+
 export default function RejectedEvaluationsIndex({ items, periods, request }: Props) {
   const [search, setSearch] = useState(request.search || '');
   const [periodId, setPeriodId] = useState(request.period_id || 'all');
-  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showForceAcceptDialog, setShowForceAcceptDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    router.get(route('rejected-evaluations.index'), { search, period_id: periodId }, { preserveState: true });
+    router.get(route('rejected-evaluations.index'), { search, period_id: periodId !== 'all' ? periodId : undefined }, { preserveState: true, replace: true });
   };
 
-  const handlePeriodChange = (value: string) => {
-    setPeriodId(value);
-    router.get(route('rejected-evaluations.index'), { search, period_id: value }, { preserveState: true });
-  };
-
-  const openApproveDialog = (id: number) => {
+  const openForceAcceptDialog = (id: number) => {
     setSelectedId(id);
-    setShowApproveDialog(true);
+    setShowForceAcceptDialog(true);
   };
 
-  const confirmApprove = () => {
+  const confirmForceAccept = () => {
     if (selectedId) {
       router.post(route('rejected-evaluations.approve', selectedId), {}, {
         preserveScroll: true,
         onSuccess: () => {
-          setShowApproveDialog(false);
+          setShowForceAcceptDialog(false);
           setSelectedId(null);
         }
       });
@@ -106,22 +108,21 @@ export default function RejectedEvaluationsIndex({ items, periods, request }: Pr
   };
 
   return (
-    <AppLayout
-      breadcrumbs={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Rejected Evaluations', href: '/rejected-evaluations' },
-      ]}
-    >
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Rejected Evaluations" />
-
-      <Card>
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>Rejected Evaluations</CardTitle>
-          <CardAction>
-            <form className="flex gap-2" onSubmit={submitSearch}>
-              <Select value={periodId} onValueChange={handlePeriodChange}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="All Periods" />
+      <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Rejected Evaluations</CardTitle>
+            <form className="ml-4 flex gap-2" onSubmit={submitSearch}>
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search evaluations..."
+              />
+              <Select value={periodId} onValueChange={setPeriodId}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Filter by period" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Periods</SelectItem>
@@ -132,123 +133,106 @@ export default function RejectedEvaluationsIndex({ items, periods, request }: Pr
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search rejected evaluations..."
-                className="w-[300px]"
-              />
               <Button type="submit" variant="outline">Search</Button>
             </form>
-          </CardAction>
-        </CardHeader>
-
-        <div className="border-b border-gray-200 dark:border-gray-700" />
-
-        <CardContent className="p-6">
-          {items.data.length === 0 ? (
-            <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-              No rejected evaluations found.
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-100 dark:bg-gray-800">
-                    <TableHead className="font-bold text-white">ID</TableHead>
-                    <TableHead className="font-bold text-white">Evaluation</TableHead>
-                    <TableHead className="font-bold text-white">Evaluatee</TableHead>
-                    <TableHead className="font-bold text-white">Type</TableHead>
-                    <TableHead className="font-bold text-white">Period</TableHead>
-                    <TableHead className="font-bold text-white">Evaluator</TableHead>
-                    <TableHead className="font-bold text-white">Avg Score</TableHead>
-                    <TableHead className="font-bold text-white">Rejected At</TableHead>
-                    <TableHead className="font-bold text-white">Reason</TableHead>
-                    <TableHead className="font-bold text-white">Actions</TableHead>
+            <CardAction />
+          </CardHeader>
+          <hr />
+          <CardContent>
+            <Table>
+              <TableHeader className="bg-slate-500 dark:bg-slate-700">
+                <TableRow>
+                  <TableHead className="font-bold text-white">ID</TableHead>
+                  <TableHead className="font-bold text-white">Evaluation</TableHead>
+                  <TableHead className="font-bold text-white">Evaluatee</TableHead>
+                  <TableHead className="font-bold text-white">Type</TableHead>
+                  <TableHead className="font-bold text-white">Period</TableHead>
+                  <TableHead className="font-bold text-white">Evaluator</TableHead>
+                  <TableHead className="font-bold text-white">Avg Score</TableHead>
+                  <TableHead className="font-bold text-white">Rejected At</TableHead>
+                  <TableHead className="font-bold text-white">Reason</TableHead>
+                  <TableHead className="font-bold text-white">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.data.map((item, index) => (
+                  <TableRow key={item.id} className="odd:bg-slate-100 dark:odd:bg-slate-800">
+                    <TableCell>{(items.from ?? 0) + index}</TableCell>
+                    <TableCell className="font-medium">{item.evaluation.name}</TableCell>
+                    <TableCell>{item.evaluatee_name}</TableCell>
+                    <TableCell>
+                      <Badge className={
+                        item.evaluation_type === 'Personal'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                          : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                      }>
+                        {item.evaluation_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{item.evaluation_period}</TableCell>
+                    <TableCell>{item.evaluator}</TableCell>
+                    <TableCell>{item.average_score?.toFixed(2) ?? 'N/A'}</TableCell>
+                    <TableCell>
+                      {item.rejected_at ? new Date(item.rejected_at).toLocaleString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {item.rejection_reason ? (
+                        <span className="max-w-xs truncate block" title={item.rejection_reason}>
+                          {item.rejection_reason}
+                        </span>
+                      ) : (
+                        'No reason'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => openForceAcceptDialog(item.id)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="mr-1 h-4 w-4" />
+                          Force Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => openCancelDialog(item.id)}
+                        >
+                          <Trash2 className="mr-1 h-4 w-4" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.data.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.id}</TableCell>
-                      <TableCell>{item.evaluation.name}</TableCell>
-                      <TableCell>{item.evaluatee_name}</TableCell>
-                      <TableCell>
-                        <Badge className={
-                          item.evaluation_type === 'Personal'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                            : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        }>
-                          {item.evaluation_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{item.evaluation_period}</TableCell>
-                      <TableCell>{item.evaluator}</TableCell>
-                      <TableCell>{item.average_score?.toFixed(2) ?? 'N/A'}</TableCell>
-                      <TableCell>
-                        {item.rejected_at ? new Date(item.rejected_at).toLocaleString() : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {item.rejection_reason ? (
-                          <span className="max-w-xs truncate block" title={item.rejection_reason}>
-                            {item.rejection_reason}
-                          </span>
-                        ) : (
-                          'No reason provided'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => openApproveDialog(item.id)}
-                            className="bg-green-600 hover:bg-green-700"
-                            title="Approve and change status to Accepted"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => openCancelDialog(item.id)}
-                            title="Cancel evaluation (allows re-evaluation)"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              <TablePagination 
-                links={items.links} 
-                total={items.total}
-                from={items.data.length > 0 ? (items.current_page - 1) * items.per_page + 1 : 0}
-                to={items.data.length > 0 ? (items.current_page - 1) * items.per_page + items.data.length : 0}
-              />
-            </>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+          {items.data.length > 0 ? (
+            <TablePagination total={items.total} from={items.from} to={items.to} links={items.links} />
+          ) : (
+            <div className="flex h-full items-center justify-center p-8">No Results Found!</div>
           )}
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
 
-      {/* Approve Confirmation Dialog */}
-      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+      {/* Force Accept Confirmation Dialog */}
+      <Dialog open={showForceAcceptDialog} onOpenChange={setShowForceAcceptDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve Rejected Evaluation</DialogTitle>
+            <DialogTitle>Force Accept Rejected Evaluation</DialogTitle>
             <DialogDescription>
-              Are you sure you want to approve this rejected evaluation? This will change the status to "Accepted" and keep all evaluation data intact.
+              Are you sure you want to force accept this rejected evaluation? This will override the rejection and change the status to "Accepted", keeping all evaluation data intact.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>
+            <Button variant="outline" onClick={() => setShowForceAcceptDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmApprove} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={confirmForceAccept} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="mr-2 h-4 w-4" />
-              Approve
+              Force Accept
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -277,4 +261,3 @@ export default function RejectedEvaluationsIndex({ items, periods, request }: Pr
     </AppLayout>
   );
 }
-

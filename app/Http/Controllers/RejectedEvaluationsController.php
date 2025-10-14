@@ -105,7 +105,7 @@ class RejectedEvaluationsController extends Controller
         }
 
         if ($evaluationResponse->status !== 'rejected') {
-            return redirect()->back()->with('error', 'Only rejected evaluations can be approved.');
+            return redirect()->back()->with('error', 'Only rejected evaluations can be force accepted.');
         }
 
         $evaluationResponse->update([
@@ -115,7 +115,7 @@ class RejectedEvaluationsController extends Controller
             'rejection_reason' => null,
         ]);
 
-        return redirect()->back()->with('success', 'Evaluation has been approved successfully.');
+        return redirect()->back()->with('success', 'Evaluation has been force accepted successfully.');
     }
 
     public function cancel(EvaluationResponse $evaluationResponse)
