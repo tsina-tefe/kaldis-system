@@ -21,7 +21,8 @@ use App\Http\Controllers\{
     UserController,
     BranchController,
     PositionController,
-    EmployeeController
+    EmployeeController,
+    RejectedEvaluationsController
 };
 
 Route::get('/', fn () => Inertia::render('welcome'))->name('home');
@@ -104,6 +105,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-results/{evaluationResponse}', [\App\Http\Controllers\MyEvaluationResultsController::class, 'show'])->name('my-results.show');
     Route::post('my-results/{evaluationResponse}/accept', [\App\Http\Controllers\MyEvaluationResultsController::class, 'accept'])->name('my-results.accept');
     Route::post('my-results/{evaluationResponse}/reject', [\App\Http\Controllers\MyEvaluationResultsController::class, 'reject'])->name('my-results.reject');
+
+    // Rejected Evaluations (for authorized users to manage rejected evaluations)
+    Route::get('rejected-evaluations', [RejectedEvaluationsController::class, 'index'])->name('rejected-evaluations.index');
+    Route::post('rejected-evaluations/{evaluationResponse}/approve', [RejectedEvaluationsController::class, 'approve'])->name('rejected-evaluations.approve');
+    Route::delete('rejected-evaluations/{evaluationResponse}', [RejectedEvaluationsController::class, 'cancel'])->name('rejected-evaluations.cancel');
 });
 
 require __DIR__ . '/settings.php';

@@ -37,6 +37,7 @@ import {
   UserCircle,
   FileText,
   ClipboardCheck,
+  XCircle,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -81,6 +82,7 @@ const sections: NavSection[] = [
       { title: 'Fill Evaluation', href: '/my-evaluation', icon: ListChecks, permission: 'view evaluations' },
       { title: 'Evaluation History', href: '/my-evaluation/history', icon: History, permission: 'view evaluations' },
       { title: 'My Results', href: '/my-results', icon: Award, permission: 'view evaluations' },
+      { title: 'Rejected Evaluations', href: '/rejected-evaluations', icon: XCircle, permission: 'view rejected evaluations' },
     ],
   },
 ];
