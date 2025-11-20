@@ -40,6 +40,7 @@ type PageProps = {
 	childCategories: ChildCategory[];
 	inventoryCounts: Paginated<InventoryCount>;
 	filters: Filters;
+	selectedPeriodStatus?: string | null;
 };
 
 export default function InventoryCountsIndex({ 
@@ -50,9 +51,13 @@ export default function InventoryCountsIndex({
 	inventoryPeriods = [], 
 	childCategories = [],
 	inventoryCounts,
-	filters = {}
+	filters = {},
+	selectedPeriodStatus = null
 }: PageProps) {
 	const { can } = usePermission();
+	
+	// Check if the selected period is inactive
+	const isPeriodInactive = selectedPeriodStatus && selectedPeriodStatus !== 'active';
 
 	const [search, setSearch] = useState(filters.search ?? '');
 	const [branchFilter, setBranchFilter] = useState<string>(filters.branch_id ?? 'all');
@@ -158,7 +163,13 @@ export default function InventoryCountsIndex({
 							{can('create inventory counts') && (
 								<CardAction>
 									<Link href="/inventory-counts/create">
-										<Button variant="default" size="sm" className="w-full sm:w-auto">
+										<Button 
+											variant="default" 
+											size="sm" 
+											className="w-full sm:w-auto"
+											disabled={isPeriodInactive}
+											title={isPeriodInactive ? 'Cannot create counts for inactive period' : ''}
+										>
 											Add New
 										</Button>
 									</Link>
@@ -239,14 +250,28 @@ export default function InventoryCountsIndex({
 								<span className="text-sm font-medium">{selectedIds.length} item(s) selected</span>
 								<div className="flex flex-wrap gap-2">
 									{can('approve inventory counts') && (
-										<Button onClick={bulkApprove} size="sm" variant="default" className="flex-1 sm:flex-none">
+										<Button 
+											onClick={bulkApprove} 
+											size="sm" 
+											variant="default" 
+											className="flex-1 sm:flex-none"
+											disabled={isPeriodInactive}
+											title={isPeriodInactive ? 'Cannot approve counts for inactive period' : ''}
+										>
 											<CheckCircle className="mr-1 h-4 w-4" />
 											<span className="hidden sm:inline">Approve Selected</span>
 											<span className="sm:hidden">Approve</span>
 										</Button>
 									)}
 									{can('unapprove inventory counts') && (
-										<Button onClick={bulkUnapprove} size="sm" variant="outline" className="flex-1 sm:flex-none">
+										<Button 
+											onClick={bulkUnapprove} 
+											size="sm" 
+											variant="outline" 
+											className="flex-1 sm:flex-none"
+											disabled={isPeriodInactive}
+											title={isPeriodInactive ? 'Cannot unapprove counts for inactive period' : ''}
+										>
 											<XCircle className="mr-1 h-4 w-4" />
 											<span className="hidden sm:inline">Unapprove Selected</span>
 											<span className="sm:hidden">Unapprove</span>
@@ -327,25 +352,52 @@ export default function InventoryCountsIndex({
 												<div className="flex flex-col sm:flex-row gap-1 min-w-[100px]">
 													{!item.is_approved && can('update inventory counts') && (
 														<Link href={`/inventory-counts/${item.id}/edit`}>
-															<Button variant="outline" size="sm" className="w-full sm:w-auto">
+															<Button 
+																variant="outline" 
+																size="sm" 
+																className="w-full sm:w-auto"
+																disabled={item.inventory_period?.status !== 'active'}
+																title={item.inventory_period?.status !== 'active' ? 'Cannot edit count for inactive period' : ''}
+															>
 																Edit
 															</Button>
 														</Link>
 													)}
 													{!item.is_approved && can('delete inventory counts') && (
-														<Button variant="destructive" size="sm" onClick={() => deleteItem(item.id)} className="w-full sm:w-auto">
+														<Button 
+															variant="destructive" 
+															size="sm" 
+															onClick={() => deleteItem(item.id)} 
+															className="w-full sm:w-auto"
+															disabled={item.inventory_period?.status !== 'active'}
+															title={item.inventory_period?.status !== 'active' ? 'Cannot delete count for inactive period' : ''}
+														>
 															Delete
 														</Button>
 													)}
 													{!item.is_approved && can('approve inventory counts') && (
-														<Button variant="default" size="sm" onClick={() => approveItem(item.id)} className="w-full sm:w-auto">
+														<Button 
+															variant="default" 
+															size="sm" 
+															onClick={() => approveItem(item.id)} 
+															className="w-full sm:w-auto"
+															disabled={item.inventory_period?.status !== 'active'}
+															title={item.inventory_period?.status !== 'active' ? 'Cannot approve count for inactive period' : ''}
+														>
 															<CheckCircle className="mr-1 h-3 w-3" />
 															<span className="hidden lg:inline">Approve</span>
 															<span className="lg:hidden">✓</span>
 														</Button>
 													)}
 													{item.is_approved && can('unapprove inventory counts') && (
-														<Button variant="outline" size="sm" onClick={() => unapproveItem(item.id)} className="w-full sm:w-auto">
+														<Button 
+															variant="outline" 
+															size="sm" 
+															onClick={() => unapproveItem(item.id)} 
+															className="w-full sm:w-auto"
+															disabled={item.inventory_period?.status !== 'active'}
+															title={item.inventory_period?.status !== 'active' ? 'Cannot unapprove count for inactive period' : ''}
+														>
 															<XCircle className="mr-1 h-3 w-3" />
 															<span className="hidden lg:inline">Unapprove</span>
 															<span className="lg:hidden">✗</span>

@@ -19,6 +19,7 @@ export type InventoryCount = {
 	inventory_period?: {
 		id: number;
 		inventory_period_name: string;
+		status?: string;
 	};
 	child_category?: {
 		id: number;

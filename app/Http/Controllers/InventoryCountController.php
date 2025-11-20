@@ -28,7 +28,7 @@ class InventoryCountController extends Controller
         $query = InventoryCount::query()
             ->with([
                 'branch:id,name',
-                'inventoryPeriod:id,inventory_period_name',
+                'inventoryPeriod:id,inventory_period_name,status',
                 'childCategory:id,child_name',
                 'product:id,product_name',
                 'creator:id,name',
@@ -91,6 +91,7 @@ class InventoryCountController extends Controller
             'canManageAllBranches' => $canManageAllBranches,
             'canApprove' => $user->can('approve inventory counts'),
             'canUnapprove' => $user->can('unapprove inventory counts'),
+            'selectedPeriodStatus' => $periodId ? InventoryPeriod::find($periodId)?->status : null,
         ]);
     }
 
@@ -130,6 +131,12 @@ class InventoryCountController extends Controller
             'count' => ['required', 'numeric', 'min:0'],
         ]);
 
+        // Check if inventory period is active
+        $inventoryPeriod = InventoryPeriod::find($validated['inventory_period_id']);
+        if (!$inventoryPeriod || $inventoryPeriod->status !== 'active') {
+            return back()->withErrors(['inventory_period_id' => 'Cannot create inventory count for inactive period.']);
+        }
+
         // Ensure user can only create inventory counts for their own branch unless they have permission
         if (!$canManageAllBranches && $userBranchId && $validated['branch_id'] != $userBranchId) {
             return back()->withErrors(['branch_id' => 'You can only create inventory counts for your own branch.']);
@@ -153,6 +160,11 @@ class InventoryCountController extends Controller
         $userBranchId = $user->employee?->branch_id;
         $canManageAllBranches = $user->can('manage all branches inventory');
 
+        // Check if inventory period is active
+        if ($inventoryCount->inventoryPeriod->status !== 'active') {
+            abort(403, 'Cannot edit inventory count for inactive period.');
+        }
+
         // Ensure user can only edit inventory counts from their own branch unless they have permission
         if (!$canManageAllBranches && $userBranchId && $inventoryCount->branch_id != $userBranchId) {
             abort(403, 'You can only edit inventory counts from your own branch.');
@@ -161,7 +173,7 @@ class InventoryCountController extends Controller
         return Inertia::render('inventory-counts/edit', [
             'inventoryCount' => $inventoryCount->load([
                 'branch:id,name',
-                'inventoryPeriod:id,inventory_period_name',
+                'inventoryPeriod:id,inventory_period_name,status',
                 'childCategory:id,child_name',
                 'product:id,product_name',
             ]),
@@ -182,6 +194,11 @@ class InventoryCountController extends Controller
         $userBranchId = $user->employee?->branch_id;
         $canManageAllBranches = $user->can('manage all branches inventory');
 
+        // Check if inventory period is active
+        if ($inventoryCount->inventoryPeriod->status !== 'active') {
+            return back()->withErrors(['error' => 'Cannot update inventory count for inactive period.']);
+        }
+
         // Ensure user can only update inventory counts from their own branch unless they have permission
         if (!$canManageAllBranches && $userBranchId && $inventoryCount->branch_id != $userBranchId) {
             abort(403, 'You can only update inventory counts from your own branch.');
@@ -194,6 +211,12 @@ class InventoryCountController extends Controller
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'count' => ['required', 'numeric', 'min:0'],
         ]);
+
+        // Check if new period is active
+        $newInventoryPeriod = InventoryPeriod::find($validated['inventory_period_id']);
+        if (!$newInventoryPeriod || $newInventoryPeriod->status !== 'active') {
+            return back()->withErrors(['inventory_period_id' => 'Cannot update to inactive period.']);
+        }
 
         // Prevent changing branch_id to a different branch unless user has permission
         if (!$canManageAllBranches && isset($validated['branch_id']) && $validated['branch_id'] != $userBranchId) {
@@ -245,6 +268,16 @@ class InventoryCountController extends Controller
             'counts.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'counts.*.count' => ['required', 'numeric', 'min:0'],
         ]);
+
+        // Check if all periods are active
+        $periodIds = array_unique(array_column($validated['counts'], 'inventory_period_id'));
+        $inactivePeriods = InventoryPeriod::whereIn('id', $periodIds)
+            ->where('status', '!=', 'active')
+            ->exists();
+
+        if ($inactivePeriods) {
+            return back()->withErrors(['counts' => 'Cannot create inventory counts for inactive periods.']);
+        }
 
         // Ensure all counts are for the user's branch unless they have permission
         if (!$canManageAllBranches) {
@@ -305,6 +338,11 @@ class InventoryCountController extends Controller
             abort(403, 'You do not have permission to approve inventory counts.');
         }
 
+        // Check if inventory period is active
+        if ($inventoryCount->inventoryPeriod->status !== 'active') {
+            return back()->withErrors(['error' => 'Cannot approve inventory count for inactive period.']);
+        }
+
         if ($inventoryCount->is_approved) {
             return back()->withErrors(['error' => 'This inventory count is already approved.']);
         }
@@ -354,6 +392,11 @@ class InventoryCountController extends Controller
 
         if (!$user->can('unapprove inventory counts')) {
             abort(403, 'You do not have permission to unapprove inventory counts.');
+        }
+
+        // Check if inventory period is active
+        if ($inventoryCount->inventoryPeriod->status !== 'active') {
+            return back()->withErrors(['error' => 'Cannot unapprove inventory count for inactive period.']);
         }
 
         if (!$inventoryCount->is_approved) {
@@ -426,12 +469,22 @@ class InventoryCountController extends Controller
             'ids.*' => ['required', 'integer', 'exists:inventory_counts,id'],
         ]);
 
-        $counts = InventoryCount::whereIn('id', $validated['ids'])
+        $counts = InventoryCount::with('inventoryPeriod')
+            ->whereIn('id', $validated['ids'])
             ->where('is_approved', false)
             ->get();
 
         if ($counts->isEmpty()) {
             return back()->withErrors(['error' => 'No unapproved inventory counts found with the provided IDs.']);
+        }
+
+        // Check if all counts are from active periods
+        $inactiveCounts = $counts->filter(function ($count) {
+            return $count->inventoryPeriod->status !== 'active';
+        });
+
+        if ($inactiveCounts->isNotEmpty()) {
+            return back()->withErrors(['error' => 'Cannot approve inventory counts from inactive periods.']);
         }
 
         $userId = auth()->id();
@@ -502,12 +555,22 @@ class InventoryCountController extends Controller
             'ids.*' => ['required', 'integer', 'exists:inventory_counts,id'],
         ]);
 
-        $counts = InventoryCount::whereIn('id', $validated['ids'])
+        $counts = InventoryCount::with('inventoryPeriod')
+            ->whereIn('id', $validated['ids'])
             ->where('is_approved', true)
             ->get();
 
         if ($counts->isEmpty()) {
             return back()->withErrors(['error' => 'No approved inventory counts found with the provided IDs.']);
+        }
+
+        // Check if all counts are from active periods
+        $inactiveCounts = $counts->filter(function ($count) {
+            return $count->inventoryPeriod->status !== 'active';
+        });
+
+        if ($inactiveCounts->isNotEmpty()) {
+            return back()->withErrors(['error' => 'Cannot unapprove inventory counts from inactive periods.']);
         }
 
         foreach ($counts as $count) {
