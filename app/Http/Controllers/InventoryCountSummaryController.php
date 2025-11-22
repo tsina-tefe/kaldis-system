@@ -90,7 +90,7 @@ class InventoryCountSummaryController extends Controller
                 return;
             }
 
-            fputcsv($out, ['Branch', 'Child Category', 'Product', 'Product Code', 'Count', 'Unit Price', 'Total Cost']);
+            fputcsv($out, ['Branch', 'Child Category', 'Product', 'Product Code', 'Count', 'Unit Cost', 'Total Cost']);
 
             foreach ($data as $branch) {
                 $isBranchExpanded = in_array($branch['branch_id'], $expandedBranchIds);
@@ -152,7 +152,7 @@ class InventoryCountSummaryController extends Controller
                             $product['product_name'],
                             $product['product_code'] ?? '',
                             $product['count'],
-                            $product['unit_price'],
+                            $product['unit_cost'],
                             $product['total_cost'],
                         ]);
                     }
@@ -178,7 +178,7 @@ class InventoryCountSummaryController extends Controller
                 p.id as product_id,
                 p.product_name,
                 p.product_code,
-                p.unit_price,
+                p.unit_cost,
                 SUM(ic.count) as total_count
             ')
             ->when($branchId, function ($q) use ($branchId) {
@@ -193,7 +193,7 @@ class InventoryCountSummaryController extends Controller
             ->when($periodId, function ($q) use ($periodId) {
                 $q->where('ic.inventory_period_id', $periodId);
             })
-            ->groupBy('b.id', 'b.name', 'cc.id', 'cc.child_name', 'p.id', 'p.product_name', 'p.product_code', 'p.unit_price')
+            ->groupBy('b.id', 'b.name', 'cc.id', 'cc.child_name', 'p.id', 'p.product_name', 'p.product_code', 'p.unit_cost')
             ->orderBy('b.name')
             ->orderBy('cc.child_name')
             ->orderBy('p.product_name')
@@ -242,15 +242,15 @@ class InventoryCountSummaryController extends Controller
 
             $category = &$branch['categories'][$categoryIdx];
 
-            $unitPrice = $row->unit_price ? (float) $row->unit_price : 0;
+            $unitCost = $row->unit_cost ? (float) $row->unit_cost : 0;
             $count = (float) $row->total_count;
-            $totalCost = $unitPrice * $count;
+            $totalCost = $unitCost * $count;
 
             $category['products'][] = [
                 'product_id' => $row->product_id,
                 'product_name' => $row->product_name,
                 'product_code' => $row->product_code,
-                'unit_price' => number_format($unitPrice, 2, '.', ''),
+                'unit_cost' => number_format($unitCost, 2, '.', ''),
                 'count' => number_format($count, 2, '.', ''),
                 'total_cost' => number_format($totalCost, 2, '.', ''),
             ];

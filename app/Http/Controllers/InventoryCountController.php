@@ -108,7 +108,7 @@ class InventoryCountController extends Controller
             'branches' => $canManageAllBranches ? Branch::all(['id', 'name']) : Branch::where('id', $userBranchId)->get(['id', 'name']),
             'inventoryPeriods' => InventoryPeriod::where('status', 'active')->get(['id', 'inventory_period_name']),
             'childCategories' => ChildCategory::where('status', 'Active')->get(['id', 'child_name']),
-            'products' => Product::with('childCategory:id,child_name')->where('status', 'Available')->get(['id', 'product_name', 'child_category_id']),
+            'products' => Product::with('childCategory:id,child_name')->get(['id', 'product_name', 'child_category_id']),
             'canManageAllBranches' => $canManageAllBranches,
             'userBranchId' => $userBranchId,
         ]);
@@ -180,7 +180,7 @@ class InventoryCountController extends Controller
             'branches' => $canManageAllBranches ? Branch::all(['id', 'name']) : Branch::where('id', $userBranchId)->get(['id', 'name']),
             'inventoryPeriods' => InventoryPeriod::where('status', 'active')->get(['id', 'inventory_period_name']),
             'childCategories' => ChildCategory::where('status', 'Active')->get(['id', 'child_name']),
-            'products' => Product::with('childCategory:id,child_name')->where('status', 'Available')->get(['id', 'product_name', 'child_category_id']),
+            'products' => Product::with('childCategory:id,child_name')->get(['id', 'product_name', 'child_category_id']),
             'canManageAllBranches' => $canManageAllBranches,
         ]);
     }

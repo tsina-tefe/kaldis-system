@@ -13,13 +13,12 @@ class Product extends Model
     protected $fillable = [
         'product_name',
         'product_code',
-        'unit_price',
-        'status',
+        'unit_cost',
         'child_category_id',
     ];
 
     protected $casts = [
-        'unit_price' => 'decimal:2',
+        'unit_cost' => 'decimal:2',
     ];
 
     /**

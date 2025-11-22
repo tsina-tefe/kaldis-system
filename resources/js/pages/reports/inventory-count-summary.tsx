@@ -288,7 +288,7 @@ export default function InventoryCountSummaryPage({ data, branches, childCategor
 									<TableHead className="font-bold text-white">Product</TableHead>
 									<TableHead className="font-bold text-white">Product Code</TableHead>
 									<TableHead className="text-right font-bold text-white">Count</TableHead>
-									<TableHead className="text-right font-bold text-white">Unit Price</TableHead>
+									<TableHead className="text-right font-bold text-white">Unit Cost</TableHead>
 									<TableHead className="text-right font-bold text-white">Total Cost</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -317,8 +317,8 @@ export default function InventoryCountSummaryPage({ data, branches, childCategor
 													</div>
 												</TableCell>
 												<TableCell colSpan={3}></TableCell>
-												<TableCell className="text-right">{branch.total_count}</TableCell>
-												<TableCell className="text-right">-</TableCell>
+												<TableCell className="text-right"></TableCell>
+												<TableCell className="text-right"></TableCell>
 												<TableCell className="text-right">{branch.total_cost}</TableCell>
 											</TableRow>
 										);
@@ -337,8 +337,8 @@ export default function InventoryCountSummaryPage({ data, branches, childCategor
 													</div>
 												</TableCell>
 												<TableCell colSpan={3}></TableCell>
-												<TableCell className="text-right">{branch.total_count}</TableCell>
-												<TableCell className="text-right">-</TableCell>
+												<TableCell className="text-right"></TableCell>
+												<TableCell className="text-right"></TableCell>
 												<TableCell className="text-right">{branch.total_cost}</TableCell>
 											</TableRow>
 											{branch.categories.map((category) => {
@@ -359,8 +359,8 @@ export default function InventoryCountSummaryPage({ data, branches, childCategor
 																</div>
 															</TableCell>
 															<TableCell colSpan={2}></TableCell>
-															<TableCell className="text-right">{category.total_count}</TableCell>
-															<TableCell className="text-right">-</TableCell>
+															<TableCell className="text-right"></TableCell>
+															<TableCell className="text-right"></TableCell>
 															<TableCell className="text-right">{category.total_cost}</TableCell>
 														</TableRow>
 													);
@@ -380,8 +380,8 @@ export default function InventoryCountSummaryPage({ data, branches, childCategor
 																</div>
 															</TableCell>
 															<TableCell colSpan={2}></TableCell>
-															<TableCell className="text-right">{category.total_count}</TableCell>
-															<TableCell className="text-right">-</TableCell>
+															<TableCell className="text-right"></TableCell>
+															<TableCell className="text-right"></TableCell>
 															<TableCell className="text-right">{category.total_cost}</TableCell>
 														</TableRow>
 														{category.products.map((product) => (

@@ -1,5 +1,4 @@
 import TablePagination from '@/components/table-pagination';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,8 +14,7 @@ type Product = {
 	id: number;
 	product_name: string;
 	product_code?: string | null;
-	unit_price?: number | null;
-	status: 'Available' | 'Unavailable';
+	unit_cost?: number | null;
 	child_category_id: number | null;
 	child_category?: { id: number; child_name: string };
 };
@@ -112,8 +110,7 @@ export default function ProductsIndex({ products, childCategories = [], filters 
 									<TableHead className="font-bold text-white">#</TableHead>
 									<TableHead className="font-bold text-white">Name</TableHead>
 									<TableHead className="font-bold text-white">Product Code</TableHead>
-									<TableHead className="font-bold text-white">Unit Price</TableHead>
-									<TableHead className="font-bold text-white">Status</TableHead>
+									<TableHead className="font-bold text-white">Unit Cost</TableHead>
 									<TableHead className="font-bold text-white">Child Category</TableHead>
 									<TableHead className="font-bold text-white">Actions</TableHead>
 								</TableRow>
@@ -124,10 +121,7 @@ export default function ProductsIndex({ products, childCategories = [], filters 
 										<TableCell>{(products.from ?? 0) + idx}</TableCell>
 										<TableCell>{item.product_name}</TableCell>
 										<TableCell>{item.product_code ?? '-'}</TableCell>
-										<TableCell>{item.unit_price ? `${Number(item.unit_price).toFixed(2)}` : '-'}</TableCell>
-										<TableCell>
-											<Badge variant="outline">{item.status}</Badge>
-										</TableCell>
+										<TableCell>{item.unit_cost ? `${Number(item.unit_cost).toFixed(2)}` : '-'}</TableCell>
 										<TableCell>{item.child_category?.child_name ?? 'N/A'}</TableCell>
 										<TableCell>
 											{can('update products') && (
@@ -147,7 +141,7 @@ export default function ProductsIndex({ products, childCategories = [], filters 
 								))}
 								{products.data.length === 0 && (
 									<TableRow>
-										<TableCell colSpan={7}>No Results Found!</TableCell>
+										<TableCell colSpan={6}>No Results Found!</TableCell>
 									</TableRow>
 								)}
 							</TableBody>

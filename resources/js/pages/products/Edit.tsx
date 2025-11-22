@@ -13,8 +13,7 @@ type Product = {
 	id: number;
 	product_name: string;
 	product_code?: string | null;
-	unit_price?: number | null;
-	status: 'Available' | 'Unavailable';
+	unit_cost?: number | null;
 	child_category_id: number;
 };
 
@@ -28,8 +27,7 @@ export default function EditProduct({ product, childCategories = [] }: PageProps
 
 	const [productName, setProductName] = useState(product.product_name);
 	const [productCode, setProductCode] = useState(product.product_code ?? '');
-	const [unitPrice, setUnitPrice] = useState(product.unit_price ? String(product.unit_price) : '');
-	const [status, setStatus] = useState<'Available' | 'Unavailable'>(product.status);
+	const [unitCost, setUnitCost] = useState(product.unit_cost ? String(product.unit_cost) : '');
 	const [childCategoryId, setChildCategoryId] = useState<string>(String(product.child_category_id));
 
 	function save(e: React.FormEvent) {
@@ -37,8 +35,7 @@ export default function EditProduct({ product, childCategories = [] }: PageProps
 		router.put(route('products.update', product.id), {
 			product_name: productName,
 			product_code: productCode || null,
-			unit_price: unitPrice ? Number(unitPrice) : null,
-			status,
+			unit_cost: unitCost ? Number(unitCost) : null,
 			child_category_id: Number(childCategoryId),
 		});
 	}
@@ -62,20 +59,8 @@ export default function EditProduct({ product, childCategories = [] }: PageProps
 									<Input id="product_code" value={productCode} onChange={(e) => setProductCode(e.target.value)} maxLength={50} />
 								</div>
 								<div className="grid gap-2">
-									<Label htmlFor="unit_price">Unit Price</Label>
-									<Input id="unit_price" type="number" step="0.01" min="0" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
-								</div>
-								<div className="grid gap-2">
-									<Label>Status</Label>
-									<Select value={status} onValueChange={(v) => setStatus(v as 'Available' | 'Unavailable')}>
-										<SelectTrigger>
-											<SelectValue placeholder="Select status" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="Available">Available</SelectItem>
-											<SelectItem value="Unavailable">Unavailable</SelectItem>
-										</SelectContent>
-									</Select>
+									<Label htmlFor="unit_cost">Unit Cost</Label>
+									<Input id="unit_cost" type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} />
 								</div>
 								<div className="grid gap-2">
 									<Label>Child Category *</Label>

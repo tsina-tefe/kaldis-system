@@ -22,8 +22,7 @@ class ProductController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($subQuery) use ($search) {
                 $subQuery->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('product_code', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%");
+                    ->orWhere('product_code', 'like', "%{$search}%");
             });
         }
 
@@ -61,8 +60,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'product_name' => ['required', 'string', 'max:100'],
             'product_code' => ['nullable', 'string', 'max:50'],
-            'unit_price' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', Rule::in(['Available', 'Unavailable'])],
+            'unit_cost' => ['nullable', 'numeric', 'min:0'],
             'child_category_id' => ['required', 'integer', 'exists:child_categories,id'],
         ]);
 
@@ -91,8 +89,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'product_name' => ['required', 'string', 'max:100'],
             'product_code' => ['nullable', 'string', 'max:50'],
-            'unit_price' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', Rule::in(['Available', 'Unavailable'])],
+            'unit_cost' => ['nullable', 'numeric', 'min:0'],
             'child_category_id' => ['required', 'integer', 'exists:child_categories,id'],
         ]);
 

@@ -18,8 +18,7 @@ export default function CreateProduct({ childCategories = [] }: PageProps) {
 	const { can } = usePermission();
 	const [productName, setProductName] = useState('');
 	const [productCode, setProductCode] = useState('');
-	const [unitPrice, setUnitPrice] = useState('');
-	const [status, setStatus] = useState<'Available' | 'Unavailable'>('Available');
+	const [unitCost, setUnitCost] = useState('');
 	const [childCategoryId, setChildCategoryId] = useState<string>('');
 
 	function submit(e: React.FormEvent) {
@@ -27,8 +26,7 @@ export default function CreateProduct({ childCategories = [] }: PageProps) {
 		router.post(route('products.store'), {
 			product_name: productName,
 			product_code: productCode || null,
-			unit_price: unitPrice ? Number(unitPrice) : null,
-			status,
+			unit_cost: unitCost ? Number(unitCost) : null,
 			child_category_id: Number(childCategoryId),
 		});
 	}
@@ -52,20 +50,8 @@ export default function CreateProduct({ childCategories = [] }: PageProps) {
 								<Input id="product_code" value={productCode} onChange={(e) => setProductCode(e.target.value)} maxLength={50} />
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="unit_price">Unit Price</Label>
-								<Input id="unit_price" type="number" step="0.01" min="0" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
-							</div>
-							<div className="grid gap-2">
-								<Label>Status</Label>
-								<Select value={status} onValueChange={(v) => setStatus(v as 'Available' | 'Unavailable')}>
-									<SelectTrigger>
-										<SelectValue placeholder="Select status" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="Available">Available</SelectItem>
-										<SelectItem value="Unavailable">Unavailable</SelectItem>
-									</SelectContent>
-								</Select>
+								<Label htmlFor="unit_cost">Unit Cost</Label>
+								<Input id="unit_cost" type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} />
 							</div>
 							<div className="grid gap-2">
 								<Label>Child Category *</Label>
