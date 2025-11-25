@@ -54,6 +54,7 @@ const sections: NavSection[] = [
     items: [
       { title: 'Overview', href: '/dashboard', icon: LayoutDashboard, permission: 'view dashboard' },
       { title: 'Evaluation Summary', href: '/reports/evaluation-summary', icon: BarChart3, permission: 'view evaluation summary' },
+      { title: 'Branch Managers Evaluation Summary', href: '/reports/branch-manager-evaluation-summary', icon: BarChart3, permission: 'view branch manager evaluation summary' },
       { title: 'Inventory Count Summary', href: '/reports/inventory-count-summary', icon: Warehouse, permission: 'view inventory count summary' },
     ],
   },

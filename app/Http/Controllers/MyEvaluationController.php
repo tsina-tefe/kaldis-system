@@ -38,9 +38,9 @@ class MyEvaluationController extends Controller
         ]);
     }
 
-    public function show(Evaluation $evaluation)
+    public function show(Request $request, Evaluation $evaluation)
     {
-        $user = Auth::user();
+        $user = Auth::user()->load('employee');
 
         // Authorization: must belong to evaluator group
         $isAuthorized = $evaluation->evaluatorGroup->employees()
@@ -57,16 +57,35 @@ class MyEvaluationController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+        // Check if this is a Branch Managers Evaluation
+        $isBranchManagerEvaluation = stripos($evaluation->name, 'Branch Manager') !== false;
+        
+        // Get branch filter from query parameter
+        $branchId = $request->query('branch_id');
+
         // Build evaluatees based on evaluable_type
         $evaluatees = collect();
         $evaluableType = $evaluation->evaluatesGroup?->evaluable_type;
         if ($evaluation->evaluatesGroup) {
             switch ($evaluableType) {
                 case 'employee':
-                    $evaluatees = $evaluation->evaluatesGroup->employees()
-                        ->with(['user:id,employee_id,name'])
-                        ->get(['employees.id', 'first_name', 'last_name', 'email']);
-                    // Exclude self
+                    // For Branch Managers Evaluation: require branch filter to be selected
+                    if ($isBranchManagerEvaluation) {
+                        if ($branchId) {
+                            // Only get evaluatees if a branch is selected
+                            $evaluatees = $evaluation->evaluatesGroup->employees()
+                                ->with(['user:id,employee_id,name'])
+                                ->where('employees.branch_id', $branchId)
+                                ->get(['employees.id', 'first_name', 'last_name', 'email']);
+                        }
+                        // else: evaluatees remains empty collection
+                    } else {
+                        // For non-branch manager evaluations, get all evaluatees
+                        $evaluatees = $evaluation->evaluatesGroup->employees()
+                            ->with(['user:id,employee_id,name'])
+                            ->get(['employees.id', 'first_name', 'last_name', 'email']);
+                    }
+                    // Exclude self in all cases
                     $evaluatees = $evaluatees->filter(fn ($emp) => (int) $emp->id !== (int) $user->employee_id);
                     break;
                 case 'department':
@@ -105,6 +124,12 @@ class MyEvaluationController extends Controller
             ? $evaluation->evaluatesGroup->questionGroup->questions()->where('status', 'active')->get()
             : Question::whereRaw('1 = 0')->get();
 
+        // Get all branches for the filter dropdown (only for Branch Managers Evaluation)
+        $branches = collect();
+        if ($isBranchManagerEvaluation && $evaluableType === 'employee') {
+            $branches = \App\Models\Branch::orderBy('name')->get(['id', 'name']);
+        }
+
         return Inertia::render('my-evaluation/show', [
             'evaluation' => $evaluation->only(['id', 'name']),
             'evaluationPeriods' => $activePeriods,
@@ -120,6 +145,9 @@ class MyEvaluationController extends Controller
             })->values(),
             'alreadyEvaluatedByPeriod' => $alreadyEvaluatedByPeriod,
             'questions' => $questions->map(fn ($q) => [ 'id' => $q->id, 'question_text' => $q->question_text ]),
+            'isBranchManagerEvaluation' => $isBranchManagerEvaluation && $evaluableType === 'employee',
+            'branches' => $branches,
+            'selectedBranchId' => $branchId,
         ]);
     }
 

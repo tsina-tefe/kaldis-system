@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,21 +6,37 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import InputError from '@/components/input-error';
 import { useMemo, useState } from 'react';
+import { Filter } from 'lucide-react';
 
 type Period = { id: number; evaluation_period_name: string };
 type Evaluatee = { user_id?: number | null; name: string; email?: string | null };
 type Question = { id: number; question_text: string };
+type Branch = { id: number; name: string };
 
-export default function MyEvaluationShow({ evaluation, evaluationPeriods, evaluatees, evaluableType, alreadyEvaluatedByPeriod, questions }: {
+export default function MyEvaluationShow({ 
+  evaluation, 
+  evaluationPeriods, 
+  evaluatees, 
+  evaluableType, 
+  alreadyEvaluatedByPeriod, 
+  questions,
+  isBranchManagerEvaluation = false,
+  branches = [],
+  selectedBranchId
+}: {
   evaluation: { id: number; name?: string };
   evaluationPeriods: Period[];
   evaluatees: { id: number; label: string }[];
   evaluableType: 'employee' | 'department' | 'branch' | 'other';
   alreadyEvaluatedByPeriod: Record<string, number[]>;
   questions: Question[];
+  isBranchManagerEvaluation?: boolean;
+  branches?: Branch[];
+  selectedBranchId?: string;
 }) {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
+  const [branchFilter, setBranchFilter] = useState(selectedBranchId || '');
 
   const pendingEvaluatees = useMemo(() => {
     const periodKey = selectedPeriodId || '';
@@ -53,6 +69,15 @@ export default function MyEvaluationShow({ evaluation, evaluationPeriods, evalua
     }
   };
 
+  const handleBranchFilterChange = (value: string) => {
+    setBranchFilter(value);
+    const params = value ? { branch_id: value } : {};
+    router.get(`/my-evaluation/${evaluation.id}`, params, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     post(`/my-evaluation/${evaluation.id}`);
@@ -74,7 +99,45 @@ export default function MyEvaluationShow({ evaluation, evaluationPeriods, evalua
           <hr />
           <CardContent>
             <form onSubmit={submit} className="space-y-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {isBranchManagerEvaluation && branches.length > 0 && (
+                <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <Label className="text-base font-semibold">Select Branch (Required)</Label>
+                    </div>
+                    <Select value={branchFilter || ''} onValueChange={handleBranchFilterChange}>
+                      <SelectTrigger className="bg-white dark:bg-slate-900">
+                        <SelectValue placeholder="Select a branch to view managers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id.toString()}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+                      {branchFilter 
+                        ? 'Showing managers from the selected branch. You can change branches to evaluate managers from other branches.' 
+                        : 'Please select a branch to view and evaluate its managers.'}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {isBranchManagerEvaluation && branches.length > 0 && !branchFilter ? (
+                <Card className="bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+                  <CardContent className="pt-6">
+                    <p className="text-yellow-800 dark:text-yellow-200 text-center">
+                      Please select a branch above to view managers and start the evaluation.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Evaluation Period</Label>
                   <Select value={selectedPeriodId} onValueChange={onSelectPeriod}>
@@ -139,9 +202,11 @@ export default function MyEvaluationShow({ evaluation, evaluationPeriods, evalua
                 <InputError message={errors.question_responses as any} />
               </div>
 
-              <div className="flex justify-end gap-3">
-                <Button type="submit" disabled={processing}>Submit</Button>
-              </div>
+                  <div className="flex justify-end gap-3">
+                    <Button type="submit" disabled={processing}>Submit</Button>
+                  </div>
+                </>
+              )}
             </form>
           </CardContent>
         </Card>

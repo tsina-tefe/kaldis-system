@@ -161,6 +161,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports/evaluation-summary/export', [\App\Http\Controllers\EvaluationReportController::class, 'export'])->name('reports.evaluation-summary.export');
     });
 
+    // Branch Manager Evaluation summary report (permission-gated)
+    Route::middleware('permission:view branch manager evaluation summary')->group(function () {
+        Route::get('reports/branch-manager-evaluation-summary', [\App\Http\Controllers\BranchManagerEvaluationSummaryController::class, 'summary'])->name('reports.branch-manager-evaluation-summary');
+        Route::get('reports/branch-manager-evaluation-summary/details', [\App\Http\Controllers\BranchManagerEvaluationSummaryController::class, 'details'])->name('reports.branch-manager-evaluation-summary.details');
+        Route::get('reports/branch-manager-evaluation-summary/export', [\App\Http\Controllers\BranchManagerEvaluationSummaryController::class, 'export'])->name('reports.branch-manager-evaluation-summary.export');
+    });
+
     // Inventory Count summary report (permission-gated)
     Route::middleware('permission:view inventory count summary')->group(function () {
         Route::get('reports/inventory-count-summary', [\App\Http\Controllers\InventoryCountSummaryController::class, 'summary'])->name('reports.inventory-count-summary');

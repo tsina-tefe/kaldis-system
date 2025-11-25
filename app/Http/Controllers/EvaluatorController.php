@@ -30,9 +30,9 @@ class EvaluatorController extends Controller
         ]);
     }
 
-    public function show(Evaluation $evaluation)
+    public function show(Request $request, Evaluation $evaluation)
     {
-        $user = Auth::user();
+        $user = Auth::user()->load('employee');
         
         // Check if user is authorized to evaluate this evaluation
         $isAuthorized = $evaluation->evaluatorGroup->employees()
@@ -54,14 +54,41 @@ class EvaluatorController extends Controller
             ->with('questionResponses.question')
             ->first();
 
-        // Get evaluatees for this evaluation
-        $evaluatees = $evaluation->evaluatesGroup->employees;
+        // Check if this is a Branch Managers Evaluation
+        $isBranchManagerEvaluation = stripos($evaluation->name, 'Branch Manager') !== false;
+        
+        // Get branch filter from query parameter
+        $branchId = $request->query('branch_id');
+        
+        // For Branch Managers Evaluation: require branch filter to be selected
+        if ($isBranchManagerEvaluation) {
+            if ($branchId) {
+                // Only get evaluatees if a branch is selected
+                $evaluatees = $evaluation->evaluatesGroup->employees()
+                    ->where('employees.branch_id', $branchId)
+                    ->get();
+            } else {
+                // No branch selected, return empty list
+                $evaluatees = collect();
+            }
+        } else {
+            // For non-branch manager evaluations, get all evaluatees
+            $evaluatees = $evaluation->evaluatesGroup->employees()->get();
+        }
+
+        // Get all branches for the filter dropdown (only for Branch Managers Evaluation)
+        $branches = collect();
+        if ($isBranchManagerEvaluation) {
+            $branches = \App\Models\Branch::orderBy('name')->get(['id', 'name']);
+        }
 
         return Inertia::render('evaluator/evaluation-form', [
             'evaluation' => $evaluation,
             'questions' => $questions,
             'evaluatees' => $evaluatees,
             'existingResponse' => $existingResponse,
+            'branches' => $branches,
+            'selectedBranchId' => $branchId,
         ]);
     }
 

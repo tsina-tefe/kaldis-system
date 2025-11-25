@@ -134,6 +134,9 @@ class PermissionSeeder extends Seeder
         // Evaluation Summary
         Permission::firstOrCreate(['name' => 'view evaluation summary']);
 
+        // Branch Manager Evaluation Summary
+        Permission::firstOrCreate(['name' => 'view branch manager evaluation summary']);
+
         // Inventory Count Summary
         Permission::firstOrCreate(['name' => 'view inventory count summary']);
 
