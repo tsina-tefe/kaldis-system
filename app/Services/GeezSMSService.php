@@ -48,7 +48,7 @@ class GeezSMSService
             $data = [
                 'token' => $this->token,
                 'phone' => $formattedPhone,
-                'msg' => substr($message, 0, 335), // Ensure message is under 335 characters
+                'msg' => mb_substr($message, 0, 335, 'UTF-8'), // Ensure message is under 335 characters and UTF-8 safe
             ];
 
             // Add optional shortcode_id only if it's a valid integer

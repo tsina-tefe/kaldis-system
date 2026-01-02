@@ -46,6 +46,7 @@ type Props = {
         branch_id?: string;
         collection_day_id?: string;
         order_type_id?: string;
+        late_payment?: string;
         sort?: string;
         direction?: 'asc' | 'desc';
     };
@@ -109,6 +110,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
     const [status, setStatus] = useState(filters.status || 'all');
     const [branchId, setBranchId] = useState(filters.branch_id || 'all');
     const [collectionDayId, setCollectionDayId] = useState(filters.collection_day_id || 'all');
+    const [latePayment, setLatePayment] = useState(filters.late_payment || 'all');
 
     const handleSort = (field: string) => {
         const currentSort = filters.sort;
@@ -138,6 +140,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
         if (status !== 'all') params.status = status;
         if (branchId !== 'all') params.branch_id = branchId;
         if (collectionDayId !== 'all') params.collection_day_id = collectionDayId;
+        if (latePayment !== 'all') params.late_payment = latePayment;
 
         router.get('/pre-orders', params, { preserveState: true });
     };
@@ -330,7 +333,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                             <SelectValue placeholder="Collection Day" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Collection Days</SelectItem>
+                            <SelectItem value="all">All Days</SelectItem>
                             {collectionDays.map((day) => (
                                 <SelectItem key={day.id} value={day.id.toString()}>
                                     {day.name}
@@ -338,6 +341,18 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                             ))}
                         </SelectContent>
                     </Select>
+                    {canViewAuditTrail && (
+                        <Select value={latePayment} onValueChange={setLatePayment}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Late Payment" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="1">Yes</SelectItem>
+                                <SelectItem value="0">No</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                     <Button onClick={handleFilter}>Filter</Button>
 
                     {/* Export Dropdown - Show only if user has permission to view all pre-orders */}
@@ -357,6 +372,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                     if (status !== 'all') params.append('status', status);
                                     if (branchId !== 'all') params.append('branch_id', branchId);
                                     if (collectionDayId !== 'all') params.append('collection_day_id', collectionDayId);
+                                    if (latePayment !== 'all') params.append('late_payment', latePayment);
                                     if (filters?.sort) params.append('sort', filters.sort);
                                     if (filters?.direction) params.append('direction', filters.direction);
                                     params.append('format', 'pdf');
@@ -372,6 +388,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                     if (status !== 'all') params.append('status', status);
                                     if (branchId !== 'all') params.append('branch_id', branchId);
                                     if (collectionDayId !== 'all') params.append('collection_day_id', collectionDayId);
+                                    if (latePayment !== 'all') params.append('late_payment', latePayment);
                                     if (filters?.sort) params.append('sort', filters.sort);
                                     if (filters?.direction) params.append('direction', filters.direction);
                                     params.append('format', 'excel');
@@ -386,8 +403,8 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                     )}
                 </div>
 
-                {/* Bulk SMS Controls - Show only if user has permission to view all pre-orders AND send bulk SMS */}
-                {canViewAllOrders && canSendBulkSms && selectedOrders.length > 0 && (
+                {/* Bulk SMS Controls - Show only if user has permission to view all pre-orders AND (send bulk SMS OR cancel pre-orders) */}
+                {canViewAllOrders && (canSendBulkSms || userPermissions?.includes('cancel pre-orders')) && selectedOrders.length > 0 && (
                     <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">
@@ -403,7 +420,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                             </span>
                         </div>
                         <div className="flex gap-2">
-                            {hasPendingOrders && (
+                            {hasPendingOrders && canSendBulkSms && (
                                 <Button
                                     onClick={handleBulkSmsReminder}
                                     disabled={!hasPendingOrders}
@@ -412,6 +429,56 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                 >
                                     <MessageSquareIcon className="size-4" />
                                     Send Payment Reminders
+                                </Button>
+                            )}
+                            {hasPendingOrders && userPermissions?.includes('cancel pre-orders') && (
+                                <Button
+                                    onClick={() => {
+                                        const pendingOrders = selectedOrders.filter(orderId => {
+                                            const order = preOrders.data.find((o: PreOrder) => o.id === orderId);
+                                            return order?.status === 'Pending';
+                                        });
+
+                                        if (pendingOrders.length === 0) return;
+
+                                        if (!confirm(`Are you sure you want to CANCEL ${pendingOrders.length} pending order(s)? This will also send cancellation SMS to customers.`)) {
+                                            return;
+                                        }
+
+                                        router.post('/pre-orders/bulk-cancel',
+                                            { order_ids: pendingOrders },
+                                            {
+                                                onSuccess: (page: any) => {
+                                                    toast.success(page.props.success as string);
+                                                    setSelectedOrders([]);
+                                                    setSelectAll(false);
+                                                    
+                                                     // Show detailed results if available
+                                                    if (page.props.sms_results && Array.isArray(page.props.sms_results)) {
+                                                        (page.props.sms_results as string[]).forEach(result => {
+                                                            if (result.startsWith('✅')) {
+                                                                toast.success(result);
+                                                            } else if (result.startsWith('❌')) {
+                                                                toast.error(result);
+                                                            } else {
+                                                                toast.info(result);
+                                                            }
+                                                        });
+                                                    }
+                                                },
+                                                onError: (errors: any) => {
+                                                    const errorMessage = Object.values(errors).flat().join(', ');
+                                                    toast.error(errorMessage);
+                                                }
+                                            }
+                                        );
+                                    }}
+                                    disabled={!hasPendingOrders}
+                                    variant="destructive"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Trash2Icon className="size-4" />
+                                    Send Order Cancelled
                                 </Button>
                             )}
                             <Button
@@ -473,6 +540,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                     </div>
                                 </TableHead>
                                 <TableHead>Order Type</TableHead>
+                                <TableHead>Payment Method</TableHead>
                                 <TableHead>Voucher Code</TableHead>
                                 <TableHead>Transaction Reference</TableHead>
                                 <TableHead>Collection Branch</TableHead>
@@ -497,6 +565,9 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                         <SortIcon field="total_amount" />
                                     </div>
                                 </TableHead>
+                                {canViewAuditTrail && (
+                                    <TableHead>Late Payment</TableHead>
+                                )}
                                 {canViewAuditTrail && (
                                     <>
                                         <TableHead
@@ -543,6 +614,7 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                         <TableCell>{order.client_name}</TableCell>
                                         <TableCell>{order.phone_number}</TableCell>
                                         <TableCell>{order.order_type?.name}</TableCell>
+                                        <TableCell>{order.payment_method || '-'}</TableCell>
                                         <TableCell>{order.voucher_code || '-'}</TableCell>
                                         <TableCell>{order.transaction_reference || '-'}</TableCell>
                                         <TableCell>{order.collection_branch?.name}</TableCell>
@@ -576,6 +648,17 @@ export default function Index({ preOrders, branches, collectionDays, orderTypes,
                                             )}
                                         </TableCell>
                                         <TableCell>ETB {order.total_amount}</TableCell>
+                                        {canViewAuditTrail && (
+                                            <TableCell>
+                                                {order.late_payment ? (
+                                                    <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                        Yes
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-muted-foreground">-</span>
+                                                )}
+                                            </TableCell>
+                                        )}
                                         {canViewAuditTrail && (
                                             <>
                                                 <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>

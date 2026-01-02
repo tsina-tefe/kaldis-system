@@ -210,6 +210,7 @@ class PermissionSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'send bulk sms reminders']); // Send bulk SMS reminders for pending orders
         Permission::firstOrCreate(['name' => 'view pre-order audit trail']); // View created_by, updated_by, and date columns
         Permission::firstOrCreate(['name' => 'edit collected pre-orders']); // Allow editing orders even if status is Collected
+        Permission::firstOrCreate(['name' => 'mark pre-order late payment']); // Allow checking the late payment box
 
         // SMS Balance & Management
         Permission::firstOrCreate(['name' => 'view sms balance']);

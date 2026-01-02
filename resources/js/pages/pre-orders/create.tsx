@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import AppLayout from '@/layouts/app-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,6 +28,7 @@ type Props = {
 		create_all: boolean;
 		create_walkin: boolean;
 		create_regular: boolean;
+		mark_late_payment: boolean;
 	};
 };
 
@@ -46,6 +48,8 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 		transaction_reference?: string;
 		items: OrderItem[];
 		duplicate?: string;
+		late_payment: boolean;
+		payment_method: string;
 	}>({
 		client_name: '',
 		phone_number: '',
@@ -55,6 +59,8 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 		voucher_code: '',
 		transaction_reference: '',
 		items: [],
+		late_payment: false,
+		payment_method: '',
 	});
 
 	// Handle initial order type based on permissions
@@ -252,6 +258,35 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 								</div>
 							)}
 						</div>
+
+						{!isWalkinCustomer && (
+							<div className="grid gap-2">
+								<Label htmlFor="payment_method">Payment Method</Label>
+								<Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select payment method" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="Tele Birr">Tele Birr</SelectItem>
+										<SelectItem value="CBE">CBE</SelectItem>
+									</SelectContent>
+								</Select>
+								<InputError message={errors.payment_method} />
+							</div>
+						)}
+						
+						{userPermissions.mark_late_payment && (
+							<div className="flex items-center space-x-2 pt-2">
+								<Checkbox 
+									id="late_payment" 
+									checked={data.late_payment}
+									onCheckedChange={(checked) => setData('late_payment', checked as boolean)}
+								/>
+								<Label htmlFor="late_payment" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+									Mark as Late Payment
+								</Label>
+							</div>
+						)}
 
 						<div className="grid gap-4 md:grid-cols-2">
 							<div className="grid gap-2">

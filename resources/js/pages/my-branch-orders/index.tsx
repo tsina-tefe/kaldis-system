@@ -393,7 +393,7 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 																variant="outline"
 																size="sm"
 																onClick={() => handleUncollect(order.id)}
-																className="flex items-center gap-1 border-green-600 bg-green-600 text-white hover:bg-green-700"
+																className="flex items-center gap-1 border-green-600 bg-green-600 text-white hover:bg-green-600 hover:text-white hover:opacity-60 cursor-default opacity-60"
 															>
 																<PackageCheckIcon className="size-4" />
 																Collected

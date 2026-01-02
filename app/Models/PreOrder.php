@@ -27,10 +27,13 @@ class PreOrder extends Model
         'updated_by',
         'collected_at',
         'collected_by',
+        'late_payment',
+        'payment_method',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'late_payment' => 'boolean',
     ];
 
     /**

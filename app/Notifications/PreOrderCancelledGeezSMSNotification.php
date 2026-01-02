@@ -49,13 +49,8 @@ class PreOrderCancelledGeezSMSNotification extends Notification
      */
     private function generateSMSMessage(): string
     {
-        $message = "KALDIS - Order Cancelled\n";
-        $message .= "Order #: {$this->preOrder->order_number}\n";
-        $message .= "Hi {$this->preOrder->client_name},\n";
-        $message .= "We're sorry, but your order has been CANCELLED.\n\n";
-        
-        $message .= "If you have questions, please contact the branch.\n";
-        $message .= "Thank you for choosing KALDIS!";
+        $message = "ውድ ደንበኛችን\n\n";
+        $message .= "በቅርቡ ከካልዲስ ኮፊ በስልክ ደውለው ያዘዙት ቅድመ ትዕዛዝ፡ ክፍያውን ባለማጠናቀቅዎ ተሰርዟል";
         
         return $message;
     }

@@ -25,6 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import AppLayout from '@/layouts/app-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -46,6 +47,7 @@ type Props = {
         update_all_status: boolean;
         mark_paid: boolean;
         can_cancel: boolean;
+        mark_late_payment: boolean;
     };
 };
 
@@ -64,6 +66,8 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
         voucher_code?: string;
         transaction_reference?: string;
         status: string;
+        late_payment: boolean;
+        payment_method: string;
         items: OrderItem[];
     }>({
         client_name: preOrder.client_name,
@@ -76,6 +80,9 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
         voucher_code: preOrder.voucher_code || '',
         transaction_reference: preOrder.transaction_reference || '',
         status: preOrder.status,
+
+        late_payment: preOrder.late_payment || false,
+        payment_method: preOrder.payment_method || '',
         items: preOrder.items?.map((item) => ({
             product_id: item.pre_order_product_id,
             quantity: item.quantity,
@@ -308,6 +315,21 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                             )}
                             <InputError message={errors.status} />
                         </div>
+                        
+
+
+                        {userPermissions.mark_late_payment && (
+                            <div className="flex items-center space-x-2 pt-2">
+                                <Checkbox 
+                                    id="late_payment"
+                                    checked={data.late_payment}
+                                    onCheckedChange={(checked) => setData('late_payment', checked as boolean)}
+                                />
+                                <Label htmlFor="late_payment" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    Mark as Late Payment
+                                </Label>
+                            </div>
+                        )}
                     </div>
 
                     {/* Order Details Section */}
@@ -363,9 +385,25 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                                     <InputError message={errors.transaction_reference} />
                                 </div>
                             )}
-                        </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
+
+                        {!isWalkinCustomer && (
+                             <div className="grid gap-2">
+                                <Label htmlFor="payment_method">Payment Method *</Label>
+                                <Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select payment method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Tele Birr">Tele Birr</SelectItem>
+                                        <SelectItem value="CBE">CBE</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.payment_method} />
+                            </div>
+                        )}
+
+
                             <div className="grid gap-2">
                                 <Label htmlFor="collection_day_id">Collection Day *</Label>
                                 <Select

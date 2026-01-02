@@ -50,18 +50,23 @@ class PreOrderPaidGeezSMSNotification extends Notification
      */
     private function generateSMSMessage(): string
     {
-        $message = "KALDIS - Order Confirmed!\n";
-        $message .= "Order #: {$this->preOrder->order_number}\n";
-        $message .= "Hi {$this->preOrder->client_name},\n";
-        $message .= "Your order is PAID & confirmed.\n\n";
-        
-        $message .= "Collection:\n";
-        $message .= "Day: {$this->preOrder->collectionDay->name}\n";
-        $message .= "Branch: {$this->preOrder->collectionBranch->name}\n\n";
-        
-        $message .= "Total: \${$this->preOrder->total_amount}\n";
-        $message .= "Items: " . count($this->preOrder->items) . "\n\n";
-        $message .= "Thank you!";
+        // Format products list
+        $products = $this->preOrder->items->map(function($item) {
+             return ($item->product->product_name ?? 'Unknown') . " (" . $item->quantity . ")";
+        })->implode(', ');
+
+        // Determine Discount/Order Type
+        $orderTypeName = $this->preOrder->orderType?->name ?? 'Unknown';
+        $discountType = (str_contains(strtolower($orderTypeName), 'walkin')) ? 'ቅርንጫፍ ደንበኛ' : 'ሸገር ገበታ';
+
+        $message = "ውድ ደንበኛችን {$this->preOrder->client_name}\n\n";
+        $message .= "ከካልዲስ ኮፊ በቅድመ ትዕዛዝ ደውለው ያዘዙት የበዓል ቶርታ ተረጋግጧል።\n\n";
+        $message .= "* የትዕዛዝ መለያ፥ {$this->preOrder->order_number}\n";
+        $message .= "* ያዘዙት ቶርታ፥ {$products}\n";
+        $message .= "* መውሰጃ ቀን፥ {$this->preOrder->collectionDay->name}\n";
+        $message .= "* መውሰጃ ቅርንጫፍ፥ {$this->preOrder->collectionBranch->name}\n";
+        $message .= "* ቅናሽ አይነት፥ {$discountType}\n\n";
+        $message .= "መልካም ገና";
         
         return $message;
     }

@@ -84,4 +84,6 @@ export interface PreOrder {
         name: string;
     };
     items?: PreOrderItem[];
+    late_payment?: boolean;
+    payment_method?: 'Tele Birr' | 'CBE';
 }

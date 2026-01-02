@@ -247,6 +247,11 @@ export default function Show({ preOrder, userPermissions }: Props) {
 						<span className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${statusColors[preOrder.status]}`}>
 							{preOrder.status}
 						</span>
+						{userPermissions?.includes('view pre-order audit trail') && preOrder.late_payment && (
+							<span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-800 dark:bg-red-900 dark:text-red-200">
+								Late Payment
+							</span>
+						)}
 					</div>
 				</div>
 

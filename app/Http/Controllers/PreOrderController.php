@@ -64,6 +64,10 @@ class PreOrderController extends Controller
             $query->where('order_type_id', $orderTypeId);
         }
 
+        if ($request->has('late_payment') && $request->query('late_payment') !== 'all') {
+            $query->where('late_payment', $request->boolean('late_payment'));
+        }
+
         // Sorting
         $sortField = $request->query('sort', 'created_at');
         $sortDirection = $request->query('direction', 'desc');
@@ -149,6 +153,7 @@ class PreOrderController extends Controller
                 'create_all' => $canCreateAll,
                 'create_walkin' => $canCreateWalkin,
                 'create_regular' => $canCreateRegular,
+                'mark_late_payment' => $user->can('mark pre-order late payment'),
             ]
         ]);
     }
@@ -177,6 +182,8 @@ class PreOrderController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:pre_order_products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'late_payment' => ['nullable', 'boolean'],
+            'payment_method' => ['nullable', 'string', 'in:Tele Birr,CBE'],
         ]);
 
         // Prepend +251 to phone number (remove any non-digits first)
@@ -237,6 +244,8 @@ class PreOrderController extends Controller
                 'voucher_code' => $validated['voucher_code'] ?? null,
                 'transaction_reference' => $validated['transaction_reference'] ?? null,
                 'status' => $status,
+                'late_payment' => ($validated['late_payment'] ?? false) && $user->can('mark pre-order late payment') ? true : false,
+                'payment_method' => $validated['payment_method'] ?? null,
                 'total_amount' => $totalAmount,
                 'registering_branch_id' => auth()->user()?->employee?->branch_id,
                 'created_by' => auth()->id(),
@@ -375,6 +384,7 @@ class PreOrderController extends Controller
                 'update_regular' => $canEditRegular,
                 'update_all_status' => $user->can('update all pre-order status') || $user->can('update pre-order status'),
                 'mark_paid' => $user->can('mark pre-order as paid'),
+                'mark_late_payment' => $user->can('mark pre-order late payment'),
                 'can_cancel' => $user->can('cancel pre-orders'),
             ]
         ]);
@@ -427,6 +437,8 @@ class PreOrderController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:pre_order_products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'late_payment' => ['nullable', 'boolean'],
+            'payment_method' => ['required', 'string', 'in:Tele Birr,CBE'],
         ]);
 
         // Prepend +251 to phone number (remove any non-digits first)
@@ -437,6 +449,12 @@ class PreOrderController extends Controller
         try {
             // Load the orderType relationship to check order type
             $preOrder->load('orderType');
+
+            // Handle late payment logic
+            $latePayment = $preOrder->late_payment; // Default to existing value
+            if (isset($validated['late_payment']) && $user->can('mark pre-order late payment')) {
+                $latePayment = $validated['late_payment'];
+            }
 
             // Check if this is a Walkin Customer order - prevent status changes
             if ($isWalkinBefore && $validated['status'] !== $preOrder->status) {
@@ -507,7 +525,9 @@ class PreOrderController extends Controller
                 'total_amount' => $totalAmount,
                 'transaction_reference' => $validated['transaction_reference'] ?? null,
                 'status' => $validated['status'],
+                'payment_method' => $validated['payment_method'] ?? $preOrder->payment_method,
                 'updated_by' => auth()->id(),
+                'late_payment' => $latePayment,
             ];
 
             $updateData['voucher_code'] = $validated['voucher_code'] ?? null;
@@ -705,24 +725,93 @@ class PreOrderController extends Controller
     }
 
     /**
+     * Bulk cancel pending orders and send SMS notification
+     */
+    public function bulkCancel(Request $request): RedirectResponse
+    {
+        // Check permission
+        if (!auth()->user()->can('cancel pre-orders')) {
+            abort(403, 'You do not have permission to cancel orders.');
+        }
+
+        $validated = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['integer', 'exists:pre_orders,id'],
+        ]);
+
+        // Get pending orders with full relationships needed for notification
+        $pendingOrders = PreOrder::whereIn('id', $validated['order_ids'])
+            ->where('status', 'Pending')
+            ->with([
+                'collectionDay:id,name',
+                'collectionBranch:id,name'
+            ])
+            ->get();
+
+        if ($pendingOrders->isEmpty()) {
+            return back()->withErrors(['error' => 'No pending orders found for cancellation.']);
+        }
+
+        $successCount = 0;
+        $failureCount = 0;
+        $results = [];
+        $smsEnabled = SmsSettings::isActive();
+
+        foreach ($pendingOrders as $order) {
+            DB::beginTransaction();
+            try {
+                // Update order status
+                $order->update([
+                    'status' => 'Cancelled',
+                    'updated_by' => auth()->id(),
+                ]);
+
+                DB::commit();
+                $successCount++;
+                $cancelMsg = "✅ Order #{$order->order_number} cancelled.";
+
+                // Send SMS if enabled
+                if ($smsEnabled) {
+                    try {
+                        $smsNotification = new PreOrderCancelledGeezSMSNotification($order);
+                        $smsSent = $smsNotification->sendCustomerSMS();
+                        
+                        if ($smsSent) {
+                            $cancelMsg .= " SMS sent.";
+                        } else {
+                            $cancelMsg .= " SMS failed.";
+                        }
+                    } catch (\Exception $e) {
+                        $cancelMsg .= " SMS error.";
+                        Log::error('Bulk cancellation SMS error', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+                    }
+                }
+
+                $results[] = $cancelMsg;
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $failureCount++;
+                $results[] = "❌ Failed to cancel #{$order->order_number}: " . $e->getMessage();
+                Log::error('Bulk cancellation error', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        $summaryMessage = "Bulk cancellation completed: {$successCount} cancelled, {$failureCount} failed.";
+
+        return back()
+            ->with('success', $summaryMessage)
+            ->with('sms_results', $results);
+    }
+
+    /**
      * Generate SMS reminder message for pending orders
      */
     private function generateReminderMessage(PreOrder $preOrder): string
     {
-        $message = "KALDIS - Payment Reminder\n\n";
-        $message .= "Order Number: {$preOrder->order_number}\n";
-        $message .= "Dear {$preOrder->client_name},\n\n";
-        $message .= "We noticed your order is still awaiting payment.\n\n";
-
-        $message .= "Collection Details:\n";
-        $message .= "- Day: {$preOrder->collectionDay->name}\n";
-        $message .= "- Branch: {$preOrder->collectionBranch->name}\n\n";
-
-        $message .= "Total Amount: {$preOrder->total_amount} ETB\n";
-        $message .= "Items Ordered: " . $preOrder->items->count() . "\n\n";
-
-        $message .= "Kindly complete your payment at your earliest convenience.\n";
-        $message .= "Thank you for choosing KALDIS!";
+        $message = "ውድ ደንበኛችን\n\n";
+        $message .= "በቅርቡ ከካልዲስ ኮፊ በስልክ ደውለው ላዘዙት ቅድመ ትዕዛዝ ክፍያውን እስከ ምሽቱ 11:00 ድረስ ካላጠናቀቁ ትዕዛዙ ስለሚሰረዝ በቀረዎት ግዜ እባክዎን ክፍያውን ይጨርሱ።\n\n";
+        $message .= "እናመሰግናለን";
 
         return $message;
     }
@@ -781,11 +870,12 @@ class PreOrderController extends Controller
 
         if ($validated['status'] === 'Paid') {
             // Reload relationships for message generation
-            $preOrder->load(['collectionDay', 'collectionBranch', 'items.product']);
+            $preOrder->load(['collectionDay', 'collectionBranch', 'items.product', 'orderType']);
             $telegramMessage = $this->generateTelegramMessage($preOrder);
 
             // Send SMS notification to customer using GeezSMS
-            try {
+            if (SmsSettings::isActive()) {
+                try {
                 $smsNotification = new PreOrderPaidGeezSMSNotification($preOrder);
                 $smsSent = $smsNotification->sendCustomerSMS();
 
@@ -804,8 +894,11 @@ class PreOrderController extends Controller
                         'phone' => $preOrder->phone_number
                     ]);
                 }
-            } catch (\Exception $e) {
-                Log::error('SMS notification error', ['error' => $e->getMessage()]);
+                } catch (\Exception $e) {
+                    Log::error('SMS notification error', ['error' => $e->getMessage()]);
+                }
+            } else {
+                $smsStatus = 'SMS service is currently deactivated.';
             }
         } elseif ($validated['status'] === 'Cancelled') {
             // Send cancellation SMS
@@ -905,6 +998,10 @@ class PreOrderController extends Controller
 
         if ($orderTypeId = $request->query('order_type_id')) {
             $query->where('order_type_id', $orderTypeId);
+        }
+
+        if ($request->has('late_payment') && $request->query('late_payment') !== 'all') {
+            $query->where('late_payment', $request->boolean('late_payment'));
         }
 
         // Sorting
@@ -1009,24 +1106,24 @@ class PreOrderController extends Controller
         }, 200, $headers);
     }
 
+    /**
+     * Generate a unique random 6-character order number
+     */
     private function generateOrderNumber(): string
     {
-        $date = now()->format('Ymd');
-        $prefix = "PRE-{$date}-";
+        do {
+            // Generate 2 random uppercase letters
+            $letters = '';
+            for ($i = 0; $i < 2; $i++) {
+                $letters .= chr(rand(65, 90));
+            }
+            
+            // Generate 4 random digits
+            $numbers = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            
+            $orderNumber = $letters . $numbers;
+        } while (PreOrder::where('order_number', $orderNumber)->exists());
 
-        // Get the last order number for today
-        $lastOrder = PreOrder::where('order_number', 'like', "{$prefix}%")
-            ->orderByDesc('order_number')
-            ->first();
-
-        if ($lastOrder) {
-            // Extract the sequence number and increment
-            $lastSequence = (int) substr($lastOrder->order_number, -4);
-            $newSequence = $lastSequence + 1;
-        } else {
-            $newSequence = 1;
-        }
-
-        return $prefix . str_pad($newSequence, 4, '0', STR_PAD_LEFT);
+        return $orderNumber;
     }
 }
