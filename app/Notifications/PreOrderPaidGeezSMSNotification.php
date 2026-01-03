@@ -57,10 +57,12 @@ class PreOrderPaidGeezSMSNotification extends Notification
 
         // Determine Discount/Order Type
         $orderTypeName = $this->preOrder->orderType?->name ?? 'Unknown';
-        $discountType = (str_contains(strtolower($orderTypeName), 'walkin')) ? 'ቅርንጫፍ ደንበኛ' : 'ሸገር ገበታ';
+        $isWalkin = str_contains(strtolower($orderTypeName), 'walkin');
+        $discountType = $isWalkin ? 'ቅርንጫፍ ደንበኛ' : 'ሸገር ገበታ';
+        $orderMethod = $isWalkin ? 'ከቅርንጫፍ ያዘዙት' : 'ደውለው ያዘዙት';
 
         $message = "ውድ ደንበኛችን {$this->preOrder->client_name}\n\n";
-        $message .= "ከካልዲስ ኮፊ በቅድመ ትዕዛዝ ደውለው ያዘዙት የበዓል ቶርታ ተረጋግጧል።\n\n";
+        $message .= "ከካልዲስ ኮፊ በቅድመ ትዕዛዝ {$orderMethod} የበዓል ቶርታ ተረጋግጧል።\n\n";
         $message .= "* የትዕዛዝ መለያ፥ {$this->preOrder->order_number}\n";
         $message .= "* ያዘዙት ቶርታ፥ {$products}\n";
         $message .= "* መውሰጃ ቀን፥ {$this->preOrder->collectionDay->name}\n";

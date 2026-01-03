@@ -49,8 +49,11 @@ class PreOrderCancelledGeezSMSNotification extends Notification
      */
     private function generateSMSMessage(): string
     {
+        $orderTypeName = $this->preOrder->orderType?->name ?? 'Unknown';
+        $orderMethod = (str_contains(strtolower($orderTypeName), 'walkin')) ? 'ከቅርንጫፍ ያዘዙት' : 'በስልክ ደውለው ያዘዙት';
+
         $message = "ውድ ደንበኛችን\n\n";
-        $message .= "በቅርቡ ከካልዲስ ኮፊ በስልክ ደውለው ያዘዙት ቅድመ ትዕዛዝ፡ ክፍያውን ባለማጠናቀቅዎ ተሰርዟል";
+        $message .= "በቅርቡ ከካልዲስ ኮፊ {$orderMethod} ቅድመ ትዕዛዝ፡ ክፍያውን ባለማጠናቀቅዎ ተሰርዟል";
         
         return $message;
     }
