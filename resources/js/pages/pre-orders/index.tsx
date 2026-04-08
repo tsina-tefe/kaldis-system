@@ -63,6 +63,10 @@ type Props = {
         direction?: 'asc' | 'desc';
     };
     userPermissions: string[];
+    smsTemplate?: {
+        name: string;
+        content: string;
+    };
 };
 
 const statusColors = {
@@ -72,7 +76,7 @@ const statusColors = {
     Cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
 
-export default function Index({ preOrders, branches, collectionDays, holidays, orderTypes, operators, paidProductsCount, operatorStats, filters, userPermissions }: Props) {
+export default function Index({ preOrders, branches, collectionDays, holidays, orderTypes, operators, paidProductsCount, operatorStats, filters, userPermissions, smsTemplate }: Props) {
     const { auth } = usePage<SharedData>().props;
     const currentUserId = auth.user.id;
 
@@ -218,7 +222,32 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
         const isWalkin = preOrder.order_type?.name === 'Walkin Customer';
         const discountType = isWalkin ? 'ቅርንጫፍ ደንበኛ' : 'ሸገር ገበታ';
+        const orderMethod = isWalkin ? 'ከቅርንጫፍ ያዘዙት' : 'ደውለው ያዘዙት';
 
+        // Use template if available, otherwise fallback to hardcoded message
+        if (smsTemplate && smsTemplate.content) {
+            let message = smsTemplate.content;
+
+            const replacements: Record<string, string> = {
+                '{client_name}': preOrder.client_name,
+                '{order_method}': orderMethod,
+                '{order_number}': preOrder.order_number,
+                '{products}': products,
+                '{collection_day}': preOrder.collection_day?.name || 'N/A',
+                '{collection_branch}': preOrder.collection_branch?.name || 'N/A',
+                '{discount_type}': discountType,
+                '{total_amount}': `ETB ${Number(preOrder.total_amount).toLocaleString()}`,
+                '{phone_number}': preOrder.phone_number,
+            };
+
+            Object.keys(replacements).forEach(key => {
+                message = message.replace(new RegExp(key, 'g'), replacements[key]);
+            });
+
+            return message;
+        }
+
+        // Fallback hardcoded message
         let message = `ውድ ደምበኛችን ${preOrder.client_name}\n\n`;
         message += "እንኳን ለዒድ አልፊጥር በሰላም አደረስዎ!\n\n";
         message += "ከካልዲስ ኮፊ የበዓል ቶርታ ስላዘዙ በጣም እናመሰግናለን። ክፍያዎት ደርስዎናል። የትዕዛዝዎ ዝርዝር መረጃ ከስር ያለውን ይመስላል፡\n\n";

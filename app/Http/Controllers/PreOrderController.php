@@ -179,6 +179,7 @@ class PreOrderController extends Controller
             ],
             'smsBalance' => $smsBalance,
             'smsLastUpdated' => $smsLastUpdated,
+            'smsTemplate' => \App\Models\SmsTemplate::where('name', 'Order Paid')->first(),
             'userPermissions' => auth()->user()->getAllPermissions()->pluck('name')->toArray(),
         ]);
     }
