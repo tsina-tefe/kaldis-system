@@ -39,8 +39,7 @@ type OrderItem = {
 
 export default function Create({ branches, collectionDays, orderTypes, products, userPermissions }: Props) {
 	const { data, setData, post, processing, errors } = useForm<{
-		first_name: string;
-		last_name: string;
+		client_name: string;
 		phone_number: string;
 		order_type_id: string;
 		collection_day_id: string;
@@ -52,8 +51,7 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 		late_payment: boolean;
 		payment_method: string;
 	}>({
-		first_name: '',
-		last_name: '',
+		client_name: '',
 		phone_number: '',
 		order_type_id: '',
 		collection_day_id: '',
@@ -126,11 +124,11 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 		let totalAmount = 0;
 		const itemDetails = products.map((product) => {
 			const quantity = productQuantities[product.id] || 0;
-			
+
 			// Use walkin_price if order type is walkin, otherwise use unit_price
 			const price = isWalkinCustomer ? product.walkin_price : product.unit_price;
 			const unitPrice = parseFloat(price);
-			
+
 			const subtotal = quantity * unitPrice;
 			totalAmount += subtotal;
 
@@ -171,26 +169,15 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 
 						<div className="grid gap-4 md:grid-cols-2">
 							<div className="grid gap-2">
-								<Label htmlFor="first_name">First Name *</Label>
+								<Label htmlFor="client_name">Client Name *</Label>
 								<Input
-									id="first_name"
-									value={data.first_name}
-									onChange={(e) => setData('first_name', e.target.value)}
+									id="client_name"
+									value={data.client_name}
+									onChange={(e) => setData('client_name', e.target.value)}
 									required
-									placeholder="Enter first name"
+									placeholder="Enter client name"
 								/>
-								<InputError message={errors.first_name} />
-							</div>
-
-							<div className="grid gap-2">
-								<Label htmlFor="last_name">Second Name</Label>
-								<Input
-									id="last_name"
-									value={data.last_name}
-									onChange={(e) => setData('last_name', e.target.value)}
-									placeholder="Enter second name"
-								/>
-								<InputError message={errors.last_name} />
+								<InputError message={errors.client_name} />
 							</div>
 
 							<div className="grid gap-2">
@@ -227,8 +214,8 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 						<div className="grid gap-4 md:grid-cols-2">
 							<div className="grid gap-2">
 								<Label htmlFor="order_type_id">Order Type *</Label>
-								<Select 
-									value={data.order_type_id} 
+								<Select
+									value={data.order_type_id}
 									onValueChange={(value) => setData('order_type_id', value)}
 									disabled={isOrderTypeDisabled}
 								>
@@ -287,11 +274,11 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 								<InputError message={errors.payment_method} />
 							</div>
 						)}
-						
+
 						{userPermissions.mark_late_payment && (
 							<div className="flex items-center space-x-2 pt-2">
-								<Checkbox 
-									id="late_payment" 
+								<Checkbox
+									id="late_payment"
 									checked={data.late_payment}
 									onCheckedChange={(checked) => setData('late_payment', checked as boolean)}
 								/>
@@ -342,8 +329,8 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 					<div className="space-y-4 rounded-lg border p-6">
 						<h3 className="text-lg font-semibold">Products *</h3>
 						<p className="text-sm text-muted-foreground">
-							{isWalkinCustomer 
-								? 'Walk-in prices applied. Enter quantity for each product.' 
+							{isWalkinCustomer
+								? 'Walk-in prices applied. Enter quantity for each product.'
 								: 'Regular prices applied. Enter quantity for each product.'}
 						</p>
 

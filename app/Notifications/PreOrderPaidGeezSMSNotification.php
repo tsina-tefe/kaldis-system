@@ -38,7 +38,7 @@ class PreOrderPaidGeezSMSNotification extends Notification
         }
 
         $message = $this->generateSMSMessage();
-        
+
         return $this->smsService->sendMessage(
             $this->preOrder->phone_number,
             $message
@@ -51,8 +51,8 @@ class PreOrderPaidGeezSMSNotification extends Notification
     private function generateSMSMessage(): string
     {
         // Format products list
-        $products = $this->preOrder->items->map(function($item) {
-             return ($item->product->product_name ?? 'Unknown') . " (" . $item->quantity . ")";
+        $products = $this->preOrder->items->map(function ($item) {
+            return ($item->product->product_name ?? 'Unknown') . " (" . $item->quantity . ")";
         })->implode(', ');
 
         // Determine Discount/Order Type
@@ -64,13 +64,11 @@ class PreOrderPaidGeezSMSNotification extends Notification
         $template = \App\Models\SmsTemplate::where('name', 'Order Paid')->first();
         if (!$template) {
             // Fallback just in case
-            return "ውድ ደንበኛችን {$this->preOrder->first_name} {$this->preOrder->last_name}\n\nከካልዲስ ኮፊ በቅድመ ትዕዛዝ {$orderMethod} የበዓል ቶርታ ተረጋግጧል።\n\n* የትዕዛዝ መለያ፥ {$this->preOrder->order_number}\n* ያዘዙት ቶርታ፥ {$products}\n* መውሰጃ ቀን፥ " . ($this->preOrder->collectionDay->name ?? '') . "\n* መውሰጃ ቅርንጫፍ፥ " . ($this->preOrder->collectionBranch->name ?? '') . "\n* ቅናሽ አይነት፥ {$discountType}\n\nመልካም ገና";
+            return "ውድ ደንበኛችን {$this->preOrder->client_name}\n\nከካልዲስ ኮፊ በቅድመ ትዕዛዝ {$orderMethod} የበዓል ቶርታ ተረጋግጧል።\n\n* የትዕዛዝ መለያ፥ {$this->preOrder->order_number}\n* ያዘዙት ቶርታ፥ {$products}\n* መውሰጃ ቀን፥ " . ($this->preOrder->collectionDay->name ?? '') . "\n* መውሰጃ ቅርንጫፍ፥ " . ($this->preOrder->collectionBranch->name ?? '') . "\n* ቅናሽ አይነት፥ {$discountType}\n\nመልካም ገና";
         }
 
         $replacements = [
-            '{first_name}' => $this->preOrder->first_name,
-            '{last_name}' => $this->preOrder->last_name,
-            '{client_name}' => trim($this->preOrder->first_name . ' ' . $this->preOrder->last_name),
+            '{client_name}' => $this->preOrder->client_name,
             '{order_method}' => $orderMethod,
             '{order_number}' => $this->preOrder->order_number,
             '{products}' => $products,

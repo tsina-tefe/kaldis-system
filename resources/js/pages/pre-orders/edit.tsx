@@ -58,8 +58,7 @@ type OrderItem = {
 
 export default function Edit({ preOrder, branches, collectionDays, orderTypes, products, isRegisteringUser, userPermissions }: Props) {
     const { data, setData, put, processing, errors } = useForm<{
-        first_name: string;
-        last_name: string;
+        client_name: string;
         phone_number: string;
         order_type_id: string;
         collection_day_id: string;
@@ -71,9 +70,8 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
         payment_method: string;
         items: OrderItem[];
     }>({
-        first_name: preOrder.first_name,
-        last_name: preOrder.last_name,
-        phone_number: preOrder.phone_number.startsWith('+251') 
+        client_name: preOrder.client_name,
+        phone_number: preOrder.phone_number.startsWith('+251')
             ? preOrder.phone_number.substring(4) // Remove +251 prefix
             : preOrder.phone_number,
         order_type_id: preOrder.order_type_id.toString(),
@@ -123,7 +121,7 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
         // First check the current form data
         const orderType = orderTypes.find(type => type.id.toString() === data.order_type_id);
         if (orderType) return orderType.name === 'Walkin Customer';
-        
+
         // Fallback to the pre-order's original type if form data not ready
         return preOrder.order_type?.name === 'Walkin Customer';
     }, [data.order_type_id, orderTypes, preOrder.order_type]);
@@ -133,11 +131,11 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
         let totalAmount = 0;
         const itemDetails = products.map((product) => {
             const quantity = productQuantities[product.id] || 0;
-            
+
             // Use walkin_price if order type is walkin, otherwise use unit_price
             const price = isWalkinCustomer ? product.walkin_price : product.unit_price;
             const unitPrice = parseFloat(price);
-            
+
             const subtotal = quantity * unitPrice;
             totalAmount += subtotal;
 
@@ -189,7 +187,7 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
     const filteredStatuses = availableStatuses.filter(status => {
         // If they can change to any status, show all
         if (userPermissions.update_all_status) return true;
-        
+
         // Always show the current status
         if (status.value === preOrder.status) return true;
 
@@ -208,7 +206,7 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        
+
         // If status is changed to Cancelled, show confirmation dialog
         if (data.status === 'Cancelled' && preOrder.status !== 'Cancelled') {
             setShowCancelConfirmation(true);
@@ -239,26 +237,15 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="grid gap-2">
-                                <Label htmlFor="first_name">First Name *</Label>
+                                <Label htmlFor="client_name">Client Name *</Label>
                                 <Input
-                                    id="first_name"
-                                    value={data.first_name}
-                                    onChange={(e) => setData('first_name', e.target.value)}
+                                    id="client_name"
+                                    value={data.client_name}
+                                    onChange={(e) => setData('client_name', e.target.value)}
                                     required
-                                    placeholder="Enter first name"
+                                    placeholder="Enter client name"
                                 />
-                                <InputError message={errors.first_name} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="last_name">Second Name</Label>
-                                <Input
-                                    id="last_name"
-                                    value={data.last_name}
-                                    onChange={(e) => setData('last_name', e.target.value)}
-                                    placeholder="Enter second name"
-                                />
-                                <InputError message={errors.last_name} />
+                                <InputError message={errors.client_name} />
                             </div>
 
                             <div className="grid gap-2">
@@ -328,12 +315,12 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                             )}
                             <InputError message={errors.status} />
                         </div>
-                        
+
 
 
                         {userPermissions.mark_late_payment && (
                             <div className="flex items-center space-x-2 pt-2">
-                                <Checkbox 
+                                <Checkbox
                                     id="late_payment"
                                     checked={data.late_payment}
                                     onCheckedChange={(checked) => setData('late_payment', checked as boolean)}
@@ -398,21 +385,21 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                             )}
 
 
-                        {!isWalkinCustomer && (
-                             <div className="grid gap-2">
-                                <Label htmlFor="payment_method">Payment Method *</Label>
-                                <Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select payment method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Tele Birr">Tele Birr</SelectItem>
-                                        <SelectItem value="CBE">CBE</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.payment_method} />
-                            </div>
-                        )}
+                            {!isWalkinCustomer && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="payment_method">Payment Method *</Label>
+                                    <Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select payment method" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Tele Birr">Tele Birr</SelectItem>
+                                            <SelectItem value="CBE">CBE</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.payment_method} />
+                                </div>
+                            )}
 
 
                             <div className="grid gap-2">
@@ -470,8 +457,8 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                     <div className="rounded-lg border p-6 space-y-4">
                         <h3 className="text-lg font-semibold">Products *</h3>
                         <p className="text-sm text-muted-foreground">
-                            {isWalkinCustomer 
-                                ? 'Walk-in prices applied. Enter quantity for each product.' 
+                            {isWalkinCustomer
+                                ? 'Walk-in prices applied. Enter quantity for each product.'
                                 : 'Regular prices applied. Enter quantity for each product.'}
                         </p>
 
@@ -551,7 +538,7 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                 onClose={() => setShowCancelConfirmation(false)}
                 onConfirm={submitForm}
                 title="Confirm Order Cancellation"
-                description={`Are you sure you want to CANCEL order ${preOrder.order_number}? An automatic SMS notification will be sent to ${preOrder.first_name} ${preOrder.last_name} (${preOrder.phone_number}) informing them of the cancellation.`}
+                description={`Are you sure you want to CANCEL order ${preOrder.order_number}? An automatic SMS notification will be sent to ${preOrder.client_name} (${preOrder.phone_number}) informing them of the cancellation.`}
                 confirmText="Yes, Cancel Order & Send SMS"
                 cancelText="Keep Order"
                 variant="destructive"

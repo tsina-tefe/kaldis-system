@@ -60,8 +60,7 @@ class MyBranchOrdersController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%")
                     ->orWhere('phone_number', 'like', "%{$search}%");
             });
         }
@@ -89,7 +88,7 @@ class MyBranchOrdersController extends Controller
         $sortField = $request->query('sort', 'created_at');
         $sortDirection = $request->query('direction', 'desc');
 
-        $allowedSorts = ['id', 'order_number', 'first_name', 'last_name', 'status', 'total_amount', 'created_at', 'collected_at'];
+        $allowedSorts = ['id', 'order_number', 'client_name', 'status', 'total_amount', 'created_at', 'collected_at'];
         if (!in_array($sortField, $allowedSorts)) {
             $sortField = 'created_at';
         }
@@ -283,8 +282,7 @@ class MyBranchOrdersController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%")
                     ->orWhere('phone_number', 'like', "%{$search}%");
             });
         }
@@ -309,7 +307,7 @@ class MyBranchOrdersController extends Controller
         $sortField = $request->query('sort', 'created_at');
         $sortDirection = $request->query('direction', 'desc');
 
-        $allowedSorts = ['id', 'order_number', 'first_name', 'last_name', 'status', 'total_amount', 'created_at', 'collected_at'];
+        $allowedSorts = ['id', 'order_number', 'client_name', 'status', 'total_amount', 'created_at', 'collected_at'];
         if (!in_array($sortField, $allowedSorts)) {
             $sortField = 'created_at';
         }
@@ -366,8 +364,7 @@ class MyBranchOrdersController extends Controller
             // Header row
             fputcsv($out, [
                 'Order #',
-                'First Name',
-                'Last Name',
+                'Client Name',
                 'Phone Number',
                 'Order Type',
                 'Collection Day',
@@ -386,8 +383,7 @@ class MyBranchOrdersController extends Controller
 
                 fputcsv($out, [
                     $order->order_number,
-                    $order->first_name,
-                    $order->last_name,
+                    $order->client_name,
                     $order->phone_number,
                     $order->orderType->name ?? '-',
                     $order->collectionDay->name ?? '-',

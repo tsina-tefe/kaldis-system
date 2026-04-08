@@ -46,8 +46,8 @@ class PreOrderController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%")
                     ->orWhere('phone_number', 'like', "%{$search}%")
                     ->orWhere('voucher_code', 'like', "%{$search}%")
                     ->orWhere('transaction_reference', 'like', "%{$search}%")
@@ -104,7 +104,7 @@ class PreOrderController extends Controller
         $sortDirection = $request->query('direction', 'desc');
 
         // Validate sort fields
-        $allowedSorts = ['id', 'order_number', 'first_name', 'last_name', 'phone_number', 'status', 'total_amount', 'created_at'];
+        $allowedSorts = ['id', 'order_number', 'client_name', 'client_name', 'phone_number', 'status', 'total_amount', 'created_at'];
         if (!in_array($sortField, $allowedSorts)) {
             $sortField = 'created_at';
         }
@@ -229,8 +229,7 @@ class PreOrderController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['nullable', 'string', 'max:255'],
+            'client_name' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:9', new EthiopianPhoneNumber],
             'order_type_id' => ['required', 'integer', 'exists:order_types,id'],
             'collection_day_id' => ['required', 'integer', 'exists:collection_days,id'],
@@ -249,8 +248,7 @@ class PreOrderController extends Controller
         $validated['phone_number'] = '+251' . $cleanedPhone;
 
         // Check for duplicate order (same client, phone, and collection day within last 24 hours)
-        $existingOrder = PreOrder::where('first_name', $validated['first_name'])
-            ->where('last_name', $validated['last_name'])
+        $existingOrder = PreOrder::where('client_name', $validated['client_name'])
             ->where('phone_number', $validated['phone_number'])
             ->where('collection_day_id', $validated['collection_day_id'])
             ->where('created_at', '>=', now()->subDay())
@@ -295,8 +293,7 @@ class PreOrderController extends Controller
             // Create pre-order
             $preOrder = PreOrder::create([
                 'order_number' => $orderNumber,
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
+                'client_name' => $validated['client_name'],
                 'phone_number' => $validated['phone_number'],
                 'order_type_id' => $validated['order_type_id'],
                 'collection_day_id' => $validated['collection_day_id'],
@@ -488,8 +485,7 @@ class PreOrderController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['nullable', 'string', 'max:255'],
+            'client_name' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:9', new EthiopianPhoneNumber],
             'order_type_id' => ['required', 'integer', 'exists:order_types,id'],
             'collection_day_id' => ['required', 'integer', 'exists:collection_days,id'],
@@ -580,8 +576,7 @@ class PreOrderController extends Controller
 
             // Prepare update data
             $updateData = [
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
+                'client_name' => $validated['client_name'],
                 'phone_number' => $validated['phone_number'],
                 'order_type_id' => $validated['order_type_id'],
                 'collection_day_id' => $validated['collection_day_id'],
@@ -757,7 +752,7 @@ class PreOrderController extends Controller
 
                 if ($smsSent) {
                     $successCount++;
-                    $results[] = "✅ SMS sent to {$order->first_name} {$order->last_name} (Order: {$order->order_number})";
+                    $results[] = "✅ SMS sent to {$order->client_name} {$order->client_name} (Order: {$order->order_number})";
                     Log::info('SMS reminder sent successfully', [
                         'pre_order_id' => $order->id,
                         'order_number' => $order->order_number,
@@ -765,7 +760,7 @@ class PreOrderController extends Controller
                     ]);
                 } else {
                     $failureCount++;
-                    $results[] = "❌ Failed to send SMS to {$order->first_name} {$order->last_name} (Order: {$order->order_number})";
+                    $results[] = "❌ Failed to send SMS to {$order->client_name} {$order->client_name} (Order: {$order->order_number})";
                     Log::warning('SMS reminder failed', [
                         'pre_order_id' => $order->id,
                         'order_number' => $order->order_number,
@@ -774,7 +769,7 @@ class PreOrderController extends Controller
                 }
             } catch (\Exception $e) {
                 $failureCount++;
-                $results[] = "❌ Error sending SMS to {$order->first_name} {$order->last_name}: " . $e->getMessage();
+                $results[] = "❌ Error sending SMS to {$order->client_name} {$order->client_name}: " . $e->getMessage();
                 Log::error('SMS reminder exception', [
                     'pre_order_id' => $order->id,
                     'order_number' => $order->order_number,
@@ -1007,7 +1002,7 @@ class PreOrderController extends Controller
 
         $template = \App\Models\SmsTemplate::where('name', 'Telegram Message')->first();
         if (!$template) {
-            $message = "ውድ ደምበኛችን {$preOrder->first_name} {$preOrder->last_name}\n\n";
+            $message = "ውድ ደምበኛችን {$preOrder->client_name} {$preOrder->client_name}\n\n";
             $message .= "እንኳን ለዒድ አልፊጥር በሰላም አደረስዎ!\n\n";
             $message .= "ከካልዲስ ኮፊ የበዓል ቶርታ ስላዘዙ በጣም እናመሰግናለን። ክፍያዎት ደርስዎናል። የትዕዛዝዎ ዝርዝር መረጃ ከስር ያለውን ይመስላል፡\n\n";
             $message .= "የተጠቀሙት የቅናሽ አይነት፡ {$discountType}\n\n";
@@ -1030,9 +1025,9 @@ class PreOrderController extends Controller
             : "\n";
 
         $replacements = [
-            '{first_name}' => $preOrder->first_name,
-            '{last_name}' => $preOrder->last_name,
-            '{client_name}' => trim($preOrder->first_name . ' ' . $preOrder->last_name),
+            '{client_name}' => $preOrder->client_name,
+            '{client_name}' => $preOrder->client_name,
+            '{client_name}' => trim($preOrder->client_name . ' ' . $preOrder->client_name),
             '{discount_type}' => $discountType,
             '{products}' => $products,
             '{total_amount}' => number_format($preOrder->total_amount, 0),
@@ -1070,8 +1065,8 @@ class PreOrderController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                    ->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%")
                     ->orWhere('phone_number', 'like', "%{$search}%");
             });
         }
@@ -1106,7 +1101,7 @@ class PreOrderController extends Controller
         $sortField = $request->query('sort', 'created_at');
         $sortDirection = $request->query('direction', 'desc');
 
-        $allowedSorts = ['id', 'order_number', 'first_name', 'last_name', 'phone_number', 'status', 'total_amount', 'created_at'];
+        $allowedSorts = ['id', 'order_number', 'client_name', 'client_name', 'phone_number', 'status', 'total_amount', 'created_at'];
         if (!in_array($sortField, $allowedSorts)) {
             $sortField = 'created_at';
         }
@@ -1191,8 +1186,8 @@ class PreOrderController extends Controller
 
                 fputcsv($out, [
                     $order->order_number,
-                    $order->first_name,
-                    $order->last_name,
+                    $order->client_name,
+                    $order->client_name,
                     $order->phone_number,
                     $order->orderType->name ?? '-',
                     $order->collectionBranch->name ?? '-',

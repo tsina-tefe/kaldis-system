@@ -213,13 +213,13 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
     const generateTelegramMessage = (preOrder: PreOrder): string => {
         const products = preOrder.items?.map((item: any) => {
-             return `${item.product?.product_name || 'Unknown'} (${item.quantity})`;
+            return `${item.product?.product_name || 'Unknown'} (${item.quantity})`;
         }).join(', ') || 'None';
 
         const isWalkin = preOrder.order_type?.name === 'Walkin Customer';
         const discountType = isWalkin ? 'ቅርንጫፍ ደንበኛ' : 'ሸገር ገበታ';
 
-        let message = `ውድ ደምበኛችን ${preOrder.first_name} ${preOrder.last_name}\n\n`;
+        let message = `ውድ ደምበኛችን ${preOrder.client_name}\n\n`;
         message += "እንኳን ለዒድ አልፊጥር በሰላም አደረስዎ!\n\n";
         message += "ከካልዲስ ኮፊ የበዓል ቶርታ ስላዘዙ በጣም እናመሰግናለን። ክፍያዎት ደርስዎናል። የትዕዛዝዎ ዝርዝር መረጃ ከስር ያለውን ይመስላል፡\n\n";
         message += `የተጠቀሙት የቅናሽ አይነት፡ ${discountType}\n\n`;
@@ -416,10 +416,10 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
                     <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Status</span>
-                        <MultiSelect 
-                            options={statusOptions} 
-                            selected={status} 
-                            onChange={setStatus} 
+                        <MultiSelect
+                            options={statusOptions}
+                            selected={status}
+                            onChange={setStatus}
                             placeholder="All Statuses"
                             className="w-[200px]"
                         />
@@ -427,10 +427,10 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
                     <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Collection Branches</span>
-                        <MultiSelect 
-                            options={branchOptions} 
-                            selected={branchId} 
-                            onChange={setBranchId} 
+                        <MultiSelect
+                            options={branchOptions}
+                            selected={branchId}
+                            onChange={setBranchId}
                             placeholder="All Branches"
                             className="w-[200px]"
                         />
@@ -438,10 +438,10 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
                     <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Days</span>
-                        <MultiSelect 
-                            options={dayOptions} 
-                            selected={collectionDayId} 
-                            onChange={setCollectionDayId} 
+                        <MultiSelect
+                            options={dayOptions}
+                            selected={collectionDayId}
+                            onChange={setCollectionDayId}
                             placeholder="All Days"
                             className="w-[180px]"
                         />
@@ -449,10 +449,10 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
                     <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Holidays</span>
-                        <MultiSelect 
-                            options={holidayOptions} 
-                            selected={holidayId} 
-                            onChange={setHolidayId} 
+                        <MultiSelect
+                            options={holidayOptions}
+                            selected={holidayId}
+                            onChange={setHolidayId}
                             placeholder="All Holidays"
                             className="w-[180px]"
                         />
@@ -461,10 +461,10 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                     {canViewAllOrders && operators.length > 0 && (
                         <div className="flex flex-col gap-1.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Operators</span>
-                            <MultiSelect 
-                                options={operatorOptions} 
-                                selected={createdBy} 
-                                onChange={setCreatedBy} 
+                            <MultiSelect
+                                options={operatorOptions}
+                                selected={createdBy}
+                                onChange={setCreatedBy}
                                 placeholder="All Operators"
                                 className="w-[180px]"
                             />
@@ -505,7 +505,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                 <DropdownMenuItem onClick={() => {
                                     const params = new URLSearchParams();
                                     if (search) params.append('search', search);
-                                    
+
                                     // Handle array parameters
                                     status.forEach(v => params.append('status[]', v));
                                     branchId.forEach(v => params.append('branch_id[]', v));
@@ -526,7 +526,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                 <DropdownMenuItem onClick={() => {
                                     const params = new URLSearchParams();
                                     if (search) params.append('search', search);
-                                    
+
                                     // Handle array parameters
                                     status.forEach(v => params.append('status[]', v));
                                     branchId.forEach(v => params.append('branch_id[]', v));
@@ -598,8 +598,8 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                                     toast.success(page.props.success as string);
                                                     setSelectedOrders([]);
                                                     setSelectAll(false);
-                                                    
-                                                     // Show detailed results if available
+
+                                                    // Show detailed results if available
                                                     if (page.props.sms_results && Array.isArray(page.props.sms_results)) {
                                                         (page.props.sms_results as string[]).forEach(result => {
                                                             if (result.startsWith('✅')) {
@@ -669,20 +669,11 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                 </TableHead>
                                 <TableHead
                                     className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => handleSort('first_name')}
+                                    onClick={() => handleSort('client_name')}
                                 >
                                     <div className="flex items-center">
-                                        First Name
-                                        <SortIcon field="first_name" />
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => handleSort('last_name')}
-                                >
-                                    <div className="flex items-center">
-                                        Second Name
-                                        <SortIcon field="last_name" />
+                                        Client Name
+                                        <SortIcon field="client_name" />
                                     </div>
                                 </TableHead>
                                 <TableHead
@@ -766,8 +757,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                             </TableCell>
                                         )}
                                         <TableCell className="font-medium">{order.order_number}</TableCell>
-                                        <TableCell>{order.first_name}</TableCell>
-                                        <TableCell>{order.last_name}</TableCell>
+                                        <TableCell>{order.client_name}</TableCell>
                                         <TableCell>{order.phone_number}</TableCell>
                                         <TableCell>{order.order_type?.name}</TableCell>
                                         <TableCell>{order.payment_method || '-'}</TableCell>

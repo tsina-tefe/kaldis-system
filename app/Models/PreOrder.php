@@ -13,8 +13,7 @@ class PreOrder extends Model
 
     protected $fillable = [
         'order_number',
-        'first_name',
-        'last_name',
+        'client_name',
         'phone_number',
         'order_type_id',
         'collection_day_id',
