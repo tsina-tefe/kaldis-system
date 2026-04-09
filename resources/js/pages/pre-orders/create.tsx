@@ -1,8 +1,11 @@
 import { type BreadcrumbItem } from '@/types';
 import { type CollectionDay, type OrderType, type PreOrderProduct } from '@/types/pre-order';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useMemo } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
+import { SharedData } from '@/types';
+import { ActionSuccessModal } from '@/components/pre-order/action-success-modal';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -61,6 +64,12 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 		items: [],
 		late_payment: false,
 		payment_method: '',
+	});
+
+	const [successModal, setSuccessModal] = useState({
+		isOpen: false,
+		title: '',
+		description: '',
 	});
 
 	// Handle initial order type based on permissions
@@ -144,9 +153,32 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 		return { itemDetails, totalAmount };
 	}, [products, productQuantities, isWalkinCustomer]);
 
+	const { flash } = usePage<SharedData>().props;
+
+	useEffect(() => {
+		if (flash.success) {
+			setSuccessModal({
+				isOpen: true,
+				title: 'Success',
+				description: flash.success,
+			});
+		}
+		if (flash.error) {
+			toast.error(flash.error);
+		}
+	}, [flash.success, flash.error]);
+
 	const handleSubmit: FormEventHandler = (e) => {
 		e.preventDefault();
-		post(route('pre-orders.store'));
+		post(route('pre-orders.store'), {
+			onSuccess: () => {
+				// Flash success handled by global listener or this page if it redirects back
+			},
+			onError: (err) => {
+				const message = Object.values(err).flat().join(', ');
+				toast.error(message || 'Failed to create pre-order');
+			},
+		});
 	};
 
 	return (
@@ -393,6 +425,13 @@ export default function Create({ branches, collectionDays, orderTypes, products,
 						</Button>
 					</div>
 				</form>
+
+				<ActionSuccessModal
+					isOpen={successModal.isOpen}
+					onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+					title={successModal.title}
+					description={successModal.description}
+				/>
 			</div>
 		</AppLayout>
 	);

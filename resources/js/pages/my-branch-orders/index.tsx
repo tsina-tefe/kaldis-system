@@ -1,9 +1,12 @@
 import { type BreadcrumbItem, type PaginationData } from '@/types';
 import { type PreOrder } from '@/types/pre-order';
-import { Link, router } from '@inertiajs/react';
-import { ArrowDown, ArrowUp, ArrowUpDown, DownloadIcon, PackageCheckIcon, ScrollTextIcon, SearchIcon, FileTextIcon, TableIcon, ChevronDownIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { ArrowDown, ArrowUp, ArrowUpDown, DownloadIcon, PackageCheckIcon, ScrollTextIcon, SearchIcon, FileTextIcon, TableIcon, ChevronDownIcon, ImageIcon, ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
+import { type SharedData } from '@/types';
+import { ActionSuccessModal } from '@/components/pre-order/action-success-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -56,6 +59,12 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 	const [orderTypeId, setOrderTypeId] = useState(filters?.order_type_id || 'all');
 	const [collectionStatus, setCollectionStatus] = useState(filters?.collection_status || 'all');
 
+	const [successModal, setSuccessModal] = useState({
+		isOpen: false,
+		title: '',
+		description: '',
+	});
+
 	const handleSort = (field: string) => {
 		const currentSort = filters?.sort;
 		const currentDirection = filters?.direction || 'desc';
@@ -83,8 +92,39 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 		if (orderTypeId !== 'all') params.order_type_id = orderTypeId;
 		if (collectionStatus !== 'all') params.collection_status = collectionStatus;
 
-		router.get('/my-branch-orders', params, { preserveState: true });
+		// Keep current sort/direction if available in filters
+		if (filters?.sort) params.sort = filters.sort;
+		if (filters?.direction) params.direction = filters.direction;
+
+		router.get('/my-branch-orders', params, {
+			preserveState: true,
+			replace: true,
+		});
 	};
+
+	// Live search effect
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			handleFilter();
+		}, 500);
+
+		return () => clearTimeout(timer);
+	}, [search, collectionDayId, orderTypeId, collectionStatus]);
+
+	const { flash } = usePage<SharedData>().props;
+
+	useEffect(() => {
+		if (flash.success) {
+			setSuccessModal({
+				isOpen: true,
+				title: 'Success',
+				description: flash.success,
+			});
+		}
+		if (flash.error) {
+			toast.error(flash.error);
+		}
+	}, [flash.success, flash.error]);
 
 	const handleCollect = (orderId: number) => {
 		router.post(
@@ -93,6 +133,13 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 			{
 				preserveState: true,
 				preserveScroll: true,
+				onSuccess: () => {
+					// Success handled by flash effect
+				},
+				onError: (err) => {
+					const message = Object.values(err).flat().join(', ');
+					toast.error(message || 'Failed to collect order');
+				},
 			},
 		);
 	};
@@ -104,6 +151,13 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 			{
 				preserveState: true,
 				preserveScroll: true,
+				onSuccess: () => {
+					// Success handled by flash effect
+				},
+				onError: (err) => {
+					const message = Object.values(err).flat().join(', ');
+					toast.error(message || 'Failed to uncollect order');
+				},
 			},
 		);
 	};
@@ -264,7 +318,6 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 							</SelectContent>
 						</Select>
 
-						<Button onClick={handleFilter}>Filter</Button>
 
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -320,21 +373,16 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 											<SortIcon field="order_number" />
 										</div>
 									</TableHead>
-									<TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('first_name')}>
+									<TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client_name')}>
 										<div className="flex items-center">
-											First Name
-											<SortIcon field="first_name" />
-										</div>
-									</TableHead>
-									<TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('last_name')}>
-										<div className="flex items-center">
-											Second Name
-											<SortIcon field="last_name" />
+											Client Name
+											<SortIcon field="client_name" />
 										</div>
 									</TableHead>
 									<TableHead>Phone</TableHead>
 									<TableHead>Order Type</TableHead>
 									<TableHead>Collection Day</TableHead>
+									<TableHead>Payment Slip</TableHead>
 									<TableHead>Products</TableHead>
 									<TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('total_amount')}>
 										<div className="flex items-center">
@@ -348,7 +396,7 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 							<TableBody>
 								{orders.data.length === 0 ? (
 									<TableRow>
-										<TableCell colSpan={8} className="text-center text-muted-foreground">
+										<TableCell colSpan={9} className="text-center text-muted-foreground">
 											No orders found for your branch.
 										</TableCell>
 									</TableRow>
@@ -358,8 +406,7 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 										return (
 											<TableRow key={order.id} className={isCollected ? 'opacity-60' : ''}>
 												<TableCell className={isCollected ? 'line-through' : ''}>{order.order_number}</TableCell>
-												<TableCell className={isCollected ? 'line-through' : ''}>{order.first_name}</TableCell>
-												<TableCell className={isCollected ? 'line-through' : ''}>{order.last_name}</TableCell>
+												<TableCell className={isCollected ? 'line-through' : ''}>{order.client_name}</TableCell>
 												<TableCell className={isCollected ? 'line-through' : ''}>{order.phone_number}</TableCell>
 
 												<TableCell className={isCollected ? 'line-through' : ''}>
@@ -376,6 +423,25 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 												</TableCell>
 
 												<TableCell className={isCollected ? 'line-through' : ''}>{order.collection_day?.name}</TableCell>
+												<TableCell className={isCollected ? 'line-through' : ''}>
+													{(() => {
+														const filename = order.payment_slip || order.transaction_reference?.match(/slip_[\w.-]+\.(?:jpg|jpeg|png)/i)?.[0];
+														return filename ? (
+															<a
+																href={`https://preorder.kaldisbunnaet.com//uploads/${filename}`}
+																target="_blank"
+																rel="noopener noreferrer"
+																className="flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+															>
+																<ImageIcon className="size-4" />
+																<span className="text-xs font-medium">View Slip</span>
+																<ExternalLink className="size-3" />
+															</a>
+														) : (
+															<span className="text-muted-foreground">-</span>
+														);
+													})()}
+												</TableCell>
 												<TableCell className={isCollected ? 'line-through' : ''}>
 													<div className="flex flex-col gap-1">
 														{order.items && order.items.length > 0 ? (
@@ -453,6 +519,13 @@ export default function Index({ orders, collectionDays, orderTypes, kpis, produc
 					)}
 				</div>
 			</div>
+
+			<ActionSuccessModal
+				isOpen={successModal.isOpen}
+				onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+				title={successModal.title}
+				description={successModal.description}
+			/>
 		</AppLayout>
 	);
 }

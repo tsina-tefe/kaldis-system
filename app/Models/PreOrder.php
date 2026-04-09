@@ -31,6 +31,7 @@ class PreOrder extends Model
         'collected_by',
         'late_payment',
         'payment_method',
+        'payment_slip',
     ];
 
     protected $casts = [

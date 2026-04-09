@@ -1,9 +1,12 @@
 import { type BreadcrumbItem } from '@/types';
 import { type PreOrder, type PreOrderProduct, type OrderType, type CollectionDay } from '@/types/pre-order';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useMemo, useState } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { FormEventHandler, useMemo, useState, useEffect } from 'react';
 import { StatusConfirmationDialog } from '@/components/pre-order/status-confirmation-dialog';
+import { ActionSuccessModal } from '@/components/pre-order/action-success-modal';
+import { toast } from 'sonner';
 
+import { SharedData } from '@/types';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -87,6 +90,12 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
             product_id: item.pre_order_product_id,
             quantity: item.quantity,
         })) || [],
+    });
+
+    const [successModal, setSuccessModal] = useState({
+        isOpen: false,
+        title: '',
+        description: '',
     });
 
     const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
@@ -203,6 +212,20 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
 
         return false;
     });
+    const { flash } = usePage<SharedData>().props;
+
+    useEffect(() => {
+        if (flash.success) {
+            setSuccessModal({
+                isOpen: true,
+                title: 'Success',
+                description: flash.success,
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error);
+        }
+    }, [flash.success, flash.error]);
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -217,7 +240,15 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
     };
 
     const submitForm = () => {
-        put(route('pre-orders.update', preOrder.id));
+        put(route('pre-orders.update', preOrder.id), {
+            onSuccess: () => {
+                // Success
+            },
+            onError: (err) => {
+                const message = Object.values(err).flat().join(', ');
+                toast.error(message || 'Failed to update pre-order');
+            },
+        });
     };
 
     return (
@@ -542,6 +573,13 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                 confirmText="Yes, Cancel Order & Send SMS"
                 cancelText="Keep Order"
                 variant="destructive"
+            />
+
+            <ActionSuccessModal
+                isOpen={successModal.isOpen}
+                onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+                title={successModal.title}
+                description={successModal.description}
             />
         </AppLayout>
     );

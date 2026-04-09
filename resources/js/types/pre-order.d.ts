@@ -88,4 +88,5 @@ export interface PreOrder {
     items?: PreOrderItem[];
     late_payment?: boolean;
     payment_method?: 'Tele Birr' | 'CBE';
+    payment_slip?: string;
 }

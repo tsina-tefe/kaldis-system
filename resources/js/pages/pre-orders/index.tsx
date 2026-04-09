@@ -1,10 +1,11 @@
 import { type BreadcrumbItem, type PaginationData, type SharedData } from '@/types';
 import { type PreOrder, type OrderType, type CollectionDay } from '@/types/pre-order';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { PlusIcon, SearchIcon, EyeIcon, PencilIcon, Trash2Icon, ArrowUpDown, ArrowUp, ArrowDown, CopyIcon, MessageSquareIcon, DownloadIcon, FileTextIcon, TableIcon, ChevronDownIcon } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { PlusIcon, SearchIcon, EyeIcon, PencilIcon, Trash2Icon, ArrowUpDown, ArrowUp, ArrowDown, CopyIcon, MessageSquareIcon, DownloadIcon, FileTextIcon, TableIcon, ChevronDownIcon, ImageIcon, ExternalLink } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+import { ActionSuccessModal } from '@/components/pre-order/action-success-modal';
 
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,7 @@ type Props = {
         order_type_id?: string | string[];
         created_by?: string | string[];
         late_payment?: string;
+        source?: string;
         sort?: string;
         direction?: 'asc' | 'desc';
     };
@@ -77,7 +79,7 @@ const statusColors = {
 };
 
 export default function Index({ preOrders, branches, collectionDays, holidays, orderTypes, operators, paidProductsCount, operatorStats, filters, userPermissions, smsTemplate }: Props) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, flash, errors } = usePage<SharedData>().props;
     const currentUserId = auth.user.id;
 
     // Permission checks - require explicit permissions
@@ -136,6 +138,19 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
     const [holidayId, setHolidayId] = useState<string[]>(ensureArray(filters.holiday_id));
     const [createdBy, setCreatedBy] = useState<string[]>(ensureArray(filters.created_by));
     const [latePayment, setLatePayment] = useState(filters.late_payment || 'all');
+    const [source, setSource] = useState<string[]>(ensureArray(filters.source));
+
+    const sourceOptions: MultiSelectOption[] = [
+        { value: 'telegram', label: 'Telegram Bot' },
+        { value: 'walkin', label: 'Walk-in' },
+        { value: 'operator', label: 'Operator' },
+    ];
+
+    const [successModal, setSuccessModal] = useState({
+        isOpen: false,
+        title: '',
+        description: ''
+    });
 
     const statusOptions: MultiSelectOption[] = [
         { value: 'Pending', label: 'Pending' },
@@ -180,13 +195,59 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
         if (holidayId.length > 0) params.holiday_id = holidayId;
         if (createdBy.length > 0) params.created_by = createdBy;
         if (latePayment !== 'all') params.late_payment = latePayment;
+        if (source.length > 0) params.source = source;
 
-        router.get('/pre-orders', params, { preserveState: true });
+        // Keep current sort/direction
+        if (filters.sort) params.sort = filters.sort;
+        if (filters.direction) params.direction = filters.direction;
+
+        router.get('/pre-orders', params, {
+            preserveState: true,
+            replace: true
+        });
     };
+
+    useEffect(() => {
+        if (flash.success) {
+            setSuccessModal({
+                isOpen: true,
+                title: 'Success',
+                description: flash.success
+            });
+        }
+        if (flash.error) {
+            toast.error(flash.error);
+        }
+        if (errors && Object.keys(errors).length > 0) {
+            const firstError = Object.values(errors)[0];
+            toast.error(Array.isArray(firstError) ? firstError[0] : firstError);
+        }
+    }, [flash.success, flash.error, errors]);
+
+    // Live search effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            handleFilter();
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search, status, branchId, collectionDayId, holidayId, createdBy, latePayment, source]);
 
     const handleDelete = (id: number, orderNumber: string) => {
         if (confirm(`Are you sure you want to delete order ${orderNumber}?`)) {
-            router.delete(route('pre-orders.destroy', id));
+            router.delete(route('pre-orders.destroy', id), {
+                onSuccess: () => {
+                    setSuccessModal({
+                        isOpen: true,
+                        title: 'Order Deleted',
+                        description: `Order ${orderNumber} has been successfully deleted.`
+                    });
+                },
+                onError: (err) => {
+                    const message = Object.values(err).flat().join(', ');
+                    toast.error(message || 'Failed to delete order');
+                }
+            });
         }
     };
 
@@ -468,7 +529,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Days</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Collection Days</span>
                         <MultiSelect
                             options={dayOptions}
                             selected={collectionDayId}
@@ -502,6 +563,17 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                         </div>
                     )}
 
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Source</span>
+                        <MultiSelect
+                            options={sourceOptions}
+                            selected={source}
+                            onChange={setSource}
+                            placeholder="All Sources"
+                            className="w-[180px]"
+                        />
+                    </div>
+
                     {canViewAuditTrail && (
                         <div className="flex flex-col gap-1.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Late Payment</span>
@@ -518,9 +590,6 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2">
-                        <Button onClick={handleFilter} className="px-6">Filter</Button>
-                    </div>
 
                     {/* Export Dropdown - Show only if user has permission to view all pre-orders */}
                     {canViewAllOrders && (
@@ -545,6 +614,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                     createdBy.forEach(v => params.append('created_by[]', v));
 
                                     if (latePayment !== 'all') params.append('late_payment', latePayment);
+                                    source.forEach(v => params.append('source[]', v));
                                     if (filters?.sort) params.append('sort', filters.sort);
                                     if (filters?.direction) params.append('direction', filters.direction);
                                     params.append('format', 'pdf');
@@ -720,6 +790,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                 <TableHead>Payment Method</TableHead>
                                 <TableHead>Voucher Code</TableHead>
                                 <TableHead>Transaction Reference</TableHead>
+                                <TableHead>Payment Slip</TableHead>
                                 <TableHead>Collection Branch</TableHead>
                                 <TableHead>Registering Branch</TableHead>
                                 <TableHead>Collection Day</TableHead>
@@ -767,7 +838,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                             {preOrders.data.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={
-                                        (canViewAllOrders ? 13 : 12) + (canViewAuditTrail ? 3 : 0)
+                                        (canViewAllOrders ? 14 : 13) + (canViewAuditTrail ? 3 : 0)
                                     } className="text-center text-muted-foreground">
                                         No pre-orders found. Click "New Pre-Order" to create one.
                                     </TableCell>
@@ -794,6 +865,25 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                                         <TableCell>{order.payment_method || '-'}</TableCell>
                                         <TableCell>{order.voucher_code || '-'}</TableCell>
                                         <TableCell>{order.transaction_reference || '-'}</TableCell>
+                                        <TableCell>
+                                            {(() => {
+                                                const filename = order.payment_slip || order.transaction_reference?.match(/slip_[\w.-]+\.(?:jpg|jpeg|png)/i)?.[0];
+                                                return filename ? (
+                                                    <a
+                                                        href={`https://preorder.kaldisbunnaet.com//uploads/${filename}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                                    >
+                                                        <ImageIcon className="size-4" />
+                                                        <span className="text-xs font-medium">View Slip</span>
+                                                        <ExternalLink className="size-3" />
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted-foreground">-</span>
+                                                );
+                                            })()}
+                                        </TableCell>
                                         <TableCell>{order.collection_branch?.name}</TableCell>
                                         <TableCell>{order.registering_branch?.name || '-'}</TableCell>
                                         <TableCell>{order.collection_day?.name}</TableCell>
@@ -913,6 +1003,13 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
                         </div>
                     </div>
                 )}
+
+                <ActionSuccessModal
+                    isOpen={successModal.isOpen}
+                    onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+                    title={successModal.title}
+                    description={successModal.description}
+                />
             </div>
         </AppLayout>
     );

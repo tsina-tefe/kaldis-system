@@ -4,6 +4,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeftIcon, CopyIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { ActionSuccessModal } from '@/components/pre-order/action-success-modal';
 
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -42,37 +43,51 @@ export default function Show({ preOrder, userPermissions }: Props) {
 	const isWalkin = preOrder.order_type?.name === 'Walkin Customer';
 	const isOwn = preOrder.created_by === currentUserId;
 
-	const hasGlobalEdit = userPermissions?.includes('update all pre-orders') || 
-						 userPermissions?.includes('edit other users pre-orders') || 
-						 userPermissions?.includes('update pre-orders');
+	const hasGlobalEdit = userPermissions?.includes('update all pre-orders') ||
+		userPermissions?.includes('edit other users pre-orders') ||
+		userPermissions?.includes('update pre-orders');
 
-	const hasTypePermission = isWalkin 
+	const hasTypePermission = isWalkin
 		? userPermissions?.includes('update walkin pre-orders')
 		: userPermissions?.includes('update regular pre-orders');
 
 	const canEditCollectedOrders = userPermissions?.includes('edit collected pre-orders');
-	
+
 	const hasBasePermission = hasGlobalEdit || (isOwn && userPermissions?.includes('edit own pre-orders')) || hasTypePermission;
 
-	const canUpdateOrders = preOrder.status === 'Collected' 
+	const canUpdateOrders = preOrder.status === 'Collected'
 		? (hasBasePermission && canEditCollectedOrders)
 		: hasBasePermission;
-	
+
 	const canDeleteOrders = userPermissions?.includes('delete pre-orders');
 	const canCopyTelegram = userPermissions?.includes('copy pre-order telegram message');
+
+	const [successModal, setSuccessModal] = useState({
+		isOpen: false,
+		title: '',
+		description: '',
+	});
 
 	const [telegramMessage, setTelegramMessage] = useState<string>('');
 
 	useEffect(() => {
 		if (flash.success) {
-			toast.success(flash.success);
+			setSuccessModal({
+				isOpen: true,
+				title: 'Success',
+				description: flash.success,
+			});
 		}
 		if (errors.status) {
 			toast.error(errors.status[0]);
 		}
 		if (flash.telegram_message) {
 			setTelegramMessage(flash.telegram_message);
-			toast.success('Telegram message generated! Click the copy button to copy it.');
+			setSuccessModal({
+				isOpen: true,
+				title: 'Telegram Message Generated',
+				description: 'Telegram message generated! Click the copy button to copy it.',
+			});
 		}
 		// Generate telegram message if status is Paid but no message in flash
 		else if (preOrder.status === 'Paid' && !telegramMessage) {
@@ -89,7 +104,7 @@ export default function Show({ preOrder, userPermissions }: Props) {
 		const isWalkin = preOrder.order_type?.name === 'Walkin Customer';
 		const discountType = isWalkin ? 'ቅርንጫፍ ደንበኛ' : 'ሸገር ገበታ';
 
-		let message = `ውድ ደምበኛችን ${preOrder.first_name} ${preOrder.last_name}\n\n`;
+		let message = `ውድ ደምበኛችን ${preOrder.client_name}\n\n`;
 		message += 'እንኳን ለዒድ አልፊጥር በሰላም አደረስዎ!\n\n';
 		message += 'ከካልዲስ ኮፊ የበዓል ቶርታ ስላዘዙ በጣም እናመሰግናለን። ክፍያዎት ደርስዎናል። የትዕዛዝዎ ዝርዝር መረጃ ከስር ያለውን ይመስላል፡\n\n';
 		message += `የተጠቀሙት የቅናሽ አይነት፡ ${discountType}\n\n`;
@@ -185,15 +200,9 @@ export default function Show({ preOrder, userPermissions }: Props) {
 					<div className="space-y-4 rounded-lg border p-6">
 						<h3 className="text-lg font-semibold">Customer Information</h3>
 						<div className="space-y-3">
-							<div className="flex gap-10">
-								<div>
-									<p className="text-sm text-muted-foreground">First Name</p>
-									<p className="font-medium">{preOrder.first_name}</p>
-								</div>
-								<div>
-									<p className="text-sm text-muted-foreground">Second Name</p>
-									<p className="font-medium">{preOrder.last_name || '-'}</p>
-								</div>
+							<div>
+								<p className="text-sm text-muted-foreground">Client Name</p>
+								<p className="font-medium">{preOrder.client_name}</p>
 							</div>
 							<div>
 								<p className="text-sm text-muted-foreground">Phone Number</p>
@@ -345,6 +354,13 @@ export default function Show({ preOrder, userPermissions }: Props) {
 					</div>
 				</div>
 			</div>
+
+			<ActionSuccessModal
+				isOpen={successModal.isOpen}
+				onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+				title={successModal.title}
+				description={successModal.description}
+			/>
 		</AppLayout>
 	);
 }

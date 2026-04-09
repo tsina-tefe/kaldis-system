@@ -44,11 +44,11 @@ class PreOrderController extends Controller
         }
 
         if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
+            $normalizedPhone = $this->normalizeSearchPhone($search);
+            $query->where(function ($q) use ($search, $normalizedPhone) {
                 $q->where('order_number', 'like', "%{$search}%")
                     ->orWhere('client_name', 'like', "%{$search}%")
-                    ->orWhere('client_name', 'like', "%{$search}%")
-                    ->orWhere('phone_number', 'like', "%{$search}%")
+                    ->orWhere('phone_number', 'like', "%{$normalizedPhone}%")
                     ->orWhere('voucher_code', 'like', "%{$search}%")
                     ->orWhere('transaction_reference', 'like', "%{$search}%")
                     ->orWhere('payment_method', 'like', "%{$search}%")
@@ -92,6 +92,27 @@ class PreOrderController extends Controller
 
         if ($request->has('late_payment') && $request->query('late_payment') !== 'all') {
             $query->where('late_payment', $request->boolean('late_payment'));
+        }
+
+        if ($sources = $request->query('source')) {
+            $sources = (array) $sources;
+            $query->where(function ($q) use ($sources) {
+                foreach ($sources as $source) {
+                    if ($source === 'telegram') {
+                        $q->orWhere('order_number', 'like', 'ORD-%');
+                    } elseif ($source === 'walkin') {
+                        $q->orWhere(function ($sq) {
+                            $sq->where('order_number', 'not like', 'ORD-%')
+                                ->whereNotNull('voucher_code');
+                        });
+                    } elseif ($source === 'operator') {
+                        $q->orWhere(function ($sq) {
+                            $sq->where('order_number', 'not like', 'ORD-%')
+                                ->whereNull('voucher_code');
+                        });
+                    }
+                }
+            });
         }
 
         $paidProductsCount = (clone $query)
@@ -173,6 +194,7 @@ class PreOrderController extends Controller
                 'order_type_id' => $request->query('order_type_id'),
                 'created_by' => $request->query('created_by'),
                 'late_payment' => $request->query('late_payment'),
+                'source' => $request->query('source'),
                 'per_page' => $request->query('per_page'),
                 'sort' => $request->query('sort'),
                 'direction' => $request->query('direction'),
@@ -753,7 +775,7 @@ class PreOrderController extends Controller
 
                 if ($smsSent) {
                     $successCount++;
-                    $results[] = "✅ SMS sent to {$order->client_name} {$order->client_name} (Order: {$order->order_number})";
+                    $results[] = "✅ SMS sent to {$order->client_name} (Order: {$order->order_number})";
                     Log::info('SMS reminder sent successfully', [
                         'pre_order_id' => $order->id,
                         'order_number' => $order->order_number,
@@ -761,7 +783,7 @@ class PreOrderController extends Controller
                     ]);
                 } else {
                     $failureCount++;
-                    $results[] = "❌ Failed to send SMS to {$order->client_name} {$order->client_name} (Order: {$order->order_number})";
+                    $results[] = "❌ Failed to send SMS to {$order->client_name} (Order: {$order->order_number})";
                     Log::warning('SMS reminder failed', [
                         'pre_order_id' => $order->id,
                         'order_number' => $order->order_number,
@@ -770,7 +792,7 @@ class PreOrderController extends Controller
                 }
             } catch (\Exception $e) {
                 $failureCount++;
-                $results[] = "❌ Error sending SMS to {$order->client_name} {$order->client_name}: " . $e->getMessage();
+                $results[] = "❌ Error sending SMS to {$order->client_name}: " . $e->getMessage();
                 Log::error('SMS reminder exception', [
                     'pre_order_id' => $order->id,
                     'order_number' => $order->order_number,
@@ -1003,12 +1025,12 @@ class PreOrderController extends Controller
 
         $template = \App\Models\SmsTemplate::where('name', 'Telegram Message')->first();
         if (!$template) {
-            $message = "ውድ ደምበኛችን {$preOrder->client_name} {$preOrder->client_name}\n\n";
+            $message = "ውድ ደምበኛችን {$preOrder->client_name}\n\n";
             $message .= "እንኳን ለዒድ አልፊጥር በሰላም አደረስዎ!\n\n";
             $message .= "ከካልዲስ ኮፊ የበዓል ቶርታ ስላዘዙ በጣም እናመሰግናለን። ክፍያዎት ደርስዎናል። የትዕዛዝዎ ዝርዝር መረጃ ከስር ያለውን ይመስላል፡\n\n";
             $message .= "የተጠቀሙት የቅናሽ አይነት፡ {$discountType}\n\n";
             $message .= "ያዘዙት ቶርታ፡ {$products}\n\n";
-            $message .= "ጠቅላላ ዋጋ፡ " . number_format($preOrder->total_amount, 0) . " ETB\n\n";
+            $message .= "ጠቅላላ ዋጋ፡ " . number_format((float) $preOrder->total_amount, 0) . " ETB\n\n";
             $message .= "ቶርታውን የሚወስዱበት ቅርንጫፍ፡ " . ($preOrder->collectionBranch->name ?? '') . "\n";
             if (!empty($preOrder->collectionBranch?->location)) {
                 $message .= "አድራሻ  ፡ {$preOrder->collectionBranch->location}\n\n";
@@ -1027,11 +1049,9 @@ class PreOrderController extends Controller
 
         $replacements = [
             '{client_name}' => $preOrder->client_name,
-            '{client_name}' => $preOrder->client_name,
-            '{client_name}' => trim($preOrder->client_name . ' ' . $preOrder->client_name),
             '{discount_type}' => $discountType,
             '{products}' => $products,
-            '{total_amount}' => number_format($preOrder->total_amount, 0),
+            '{total_amount}' => number_format((float) $preOrder->total_amount, 0),
             '{collection_branch}' => $preOrder->collectionBranch->name ?? '',
             '{branch_location}' => $branchLocation,
             '{collection_day}' => $preOrder->collectionDay->name ?? '',
@@ -1064,38 +1084,57 @@ class PreOrderController extends Controller
 
         // Apply filters
         if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
+            $normalizedPhone = $this->normalizeSearchPhone($search);
+            $query->where(function ($q) use ($search, $normalizedPhone) {
                 $q->where('order_number', 'like', "%{$search}%")
                     ->orWhere('client_name', 'like', "%{$search}%")
-                    ->orWhere('client_name', 'like', "%{$search}%")
-                    ->orWhere('phone_number', 'like', "%{$search}%");
+                    ->orWhere('phone_number', 'like', "%{$normalizedPhone}%");
             });
         }
 
         if ($status = $request->query('status')) {
-            $query->where('status', $status);
+            $query->whereIn('status', (array) $status);
         }
 
         if ($branchId = $request->query('branch_id')) {
-            $query->where('collection_branch_id', $branchId);
+            $query->whereIn('collection_branch_id', (array) $branchId);
         }
 
         if ($collectionDayId = $request->query('collection_day_id')) {
-            $query->where('collection_day_id', $collectionDayId);
+            $query->whereIn('collection_day_id', (array) $collectionDayId);
         }
 
         if ($holidayId = $request->query('holiday_id')) {
-            $query->whereHas('collectionDay', function ($q) use ($holidayId) {
-                $q->where('holiday_id', $holidayId);
-            });
+            $query->whereIn('holiday_id', (array) $holidayId);
         }
 
         if ($orderTypeId = $request->query('order_type_id')) {
-            $query->where('order_type_id', $orderTypeId);
+            $query->whereIn('order_type_id', (array) $orderTypeId);
         }
 
         if ($request->has('late_payment') && $request->query('late_payment') !== 'all') {
             $query->where('late_payment', $request->boolean('late_payment'));
+        }
+
+        if ($sources = $request->query('source')) {
+            $sources = (array) $sources;
+            $query->where(function ($q) use ($sources) {
+                foreach ($sources as $source) {
+                    if ($source === 'telegram') {
+                        $q->orWhere('order_number', 'like', 'ORD-%');
+                    } elseif ($source === 'walkin') {
+                        $q->orWhere(function ($sq) {
+                            $sq->where('order_number', 'not like', 'ORD-%')
+                                ->whereNotNull('voucher_code');
+                        });
+                    } elseif ($source === 'operator') {
+                        $q->orWhere(function ($sq) {
+                            $sq->where('order_number', 'not like', 'ORD-%')
+                                ->whereNull('voucher_code');
+                        });
+                    }
+                }
+            });
         }
 
         // Sorting
@@ -1165,8 +1204,7 @@ class PreOrderController extends Controller
             // Header row
             fputcsv($out, [
                 'Order #',
-                'First Name',
-                'Last Name',
+                'Client Name',
                 'Phone Number',
                 'Order Type',
                 'Collection Day',
@@ -1188,15 +1226,13 @@ class PreOrderController extends Controller
                 fputcsv($out, [
                     $order->order_number,
                     $order->client_name,
-                    $order->client_name,
                     $order->phone_number,
                     $order->orderType->name ?? '-',
-                    $order->collectionBranch->name ?? '-',
-                    $order->registeringBranch->name ?? '-',
                     $order->collectionDay->name ?? '-',
+                    $order->collectionBranch->name ?? '-',
                     $products,
-                    $order->status,
                     $order->total_amount,
+                    $order->status,
                     $order->notes ?? '',
                     $order->created_at->format('Y-m-d H:i:s'),
                     $order->creator->name ?? '-',
@@ -1205,6 +1241,26 @@ class PreOrderController extends Controller
             }
             fclose($out);
         }, 200, $headers);
+    }
+
+    /**
+     * Normalize search phone number by stripping common prefixes
+     */
+    private function normalizeSearchPhone($search): string
+    {
+        $normalized = $search;
+        // If it looks like a phone search (digits and possibly a plus)
+        if (preg_match('/^\+?[0-9]{3,}$/', $search)) {
+            // Strip +251, 251, or leading 0 if it's followed by 9 or 7
+            if (str_starts_with($search, '+251')) {
+                $normalized = substr($search, 4);
+            } elseif (str_starts_with($search, '251')) {
+                $normalized = substr($search, 3);
+            } elseif (str_starts_with($search, '0')) {
+                $normalized = substr($search, 1);
+            }
+        }
+        return $normalized;
     }
 
     /**

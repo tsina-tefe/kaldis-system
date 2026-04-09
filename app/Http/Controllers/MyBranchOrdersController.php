@@ -58,10 +58,11 @@ class MyBranchOrdersController extends Controller
 
         // Filter by search
         if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
+            $normalizedPhone = $this->normalizeSearchPhone($search);
+            $query->where(function ($q) use ($search, $normalizedPhone) {
                 $q->where('order_number', 'like', "%{$search}%")
                     ->orWhere('client_name', 'like', "%{$search}%")
-                    ->orWhere('phone_number', 'like', "%{$search}%");
+                    ->orWhere('phone_number', 'like', "%{$normalizedPhone}%");
             });
         }
 
@@ -396,5 +397,24 @@ class MyBranchOrdersController extends Controller
             }
             fclose($out);
         }, 200, $headers);
+    }
+    /**
+     * Normalize search phone number by stripping common prefixes
+     */
+    private function normalizeSearchPhone($search): string
+    {
+        $normalized = $search;
+        // If it looks like a phone search (digits and possibly a plus)
+        if (preg_match('/^\+?[0-9]{3,}$/', $search)) {
+            // Strip +251, 251, or leading 0 if it's followed by 9 or 7
+            if (str_starts_with($search, '+251')) {
+                $normalized = substr($search, 4);
+            } elseif (str_starts_with($search, '251')) {
+                $normalized = substr($search, 3);
+            } elseif (str_starts_with($search, '0')) {
+                $normalized = substr($search, 1);
+            }
+        }
+        return $normalized;
     }
 }
