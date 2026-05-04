@@ -226,6 +226,7 @@ class PermissionSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'create holidays']);
         Permission::firstOrCreate(['name' => 'update holidays']);
         Permission::firstOrCreate(['name' => 'delete holidays']);
+        Permission::firstOrCreate(['name' => 'view all holidays']); // View inactive holidays in dropdowns
         // Evaluation Records Management (Global)
         Permission::firstOrCreate(['name' => 'view evaluation records']);
         Permission::firstOrCreate(['name' => 'update evaluation records']);

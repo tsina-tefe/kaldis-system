@@ -42,7 +42,7 @@ type Props = {
     preOrders: PaginationData<PreOrder>;
     branches: Array<{ id: number; name: string }>;
     collectionDays: CollectionDay[];
-    holidays: Array<{ id: number; name: string }>;
+    holidays: Array<{ id: number; name: string; status?: string }>;
     orderTypes: OrderType[];
     paidProductsCount: number;
     operatorStats: {
@@ -99,6 +99,7 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
     const canCopyTelegram = userPermissions?.includes('copy pre-order telegram message');
     const canViewAuditTrail = userPermissions?.includes('view pre-order audit trail');
     const canEditCollectedOrders = userPermissions?.includes('edit collected pre-orders');
+    const canViewAllHolidays = userPermissions?.includes('view all holidays');
 
     const canEditOrder = (order: PreOrder) => {
         // If order is collected, strictly require the collected edit permission
@@ -161,7 +162,10 @@ export default function Index({ preOrders, branches, collectionDays, holidays, o
 
     const branchOptions = useMemo(() => branches.map(b => ({ value: b.id.toString(), label: b.name })), [branches]);
     const dayOptions = useMemo(() => collectionDays.map(d => ({ value: d.id.toString(), label: d.name })), [collectionDays]);
-    const holidayOptions = useMemo(() => holidays.map(h => ({ value: h.id.toString(), label: h.name })), [holidays]);
+    const holidayOptions = useMemo(() => holidays.map(h => ({
+        value: h.id.toString(),
+        label: h.status && h.status !== 'Active' ? `${h.name} (Inactive)` : h.name,
+    })), [holidays]);
     const operatorOptions = useMemo(() => operators.map(o => ({ value: o.id.toString(), label: o.name })), [operators]);
 
     const handleSort = (field: string) => {

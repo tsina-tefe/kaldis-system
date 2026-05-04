@@ -148,7 +148,10 @@ class PreOrderController extends Controller
 
         $branches = Branch::orderBy('name', 'asc')->get(['id', 'name']);
         $collectionDays = CollectionDay::where('status', 'Active')->orderBy('display_order')->get(['id', 'name']);
-        $holidays = Holiday::where('status', 'Active')->orderBy('date')->get(['id', 'name']);
+        $canViewAllHolidays = auth()->user()->can('view all holidays');
+        $holidays = $canViewAllHolidays
+            ? Holiday::orderBy('date')->get(['id', 'name', 'status'])
+            : Holiday::where('status', 'Active')->orderBy('date')->get(['id', 'name', 'status']);
         $orderTypes = OrderType::where('status', 'Active')->get(['id', 'name']);
 
         $operators = [];
