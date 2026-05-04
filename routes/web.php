@@ -251,6 +251,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('pre-orders/sms-templates', [\App\Http\Controllers\SmsTemplateController::class, 'index'])->name('pre-orders.sms-templates.index');
         Route::put('pre-orders/sms-templates/{smsTemplate}', [\App\Http\Controllers\SmsTemplateController::class, 'update'])->name('pre-orders.sms-templates.update');
 
+        Route::middleware('permission:manage pre-order payment settings')->group(function () {
+            Route::resource('pre-order-payment-settings', \App\Http\Controllers\PreOrderPaymentSettingController::class)->only(['index', 'update']);
+        });
+
         // Cost Management
         Route::middleware('permission:manage pre-order costs')->prefix('pre-orders/costs')->group(function () {
             Route::get('categories', [\App\Http\Controllers\PreOrderCostCategoryController::class, 'index'])->name('pre-order-costs.categories.index');

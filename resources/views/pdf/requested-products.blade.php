@@ -105,8 +105,8 @@
                 <td class="label">Requestor:</td>
                 <td>{{ $ticket->requestor_full_name }}</td>
                 @if($ticket->ticket_main_category_id != 22)
-                    <td class="label">Sub Category:</td>
-                    <td>{{ $ticket->subCategory?->name ?? $ticket->sub_category?->name ?? 'N/A' }}</td>
+                    <td class="label">Main Category:</td>
+                    <td>{{ $ticket->mainCategory?->name ?? $ticket->main_category?->name ?? 'N/A' }}</td>
                 @endif
             </tr>
         </table>

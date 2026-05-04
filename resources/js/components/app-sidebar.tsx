@@ -178,6 +178,7 @@ const baseSections: NavSection[] = [
       { title: 'SMS Templates', href: '/pre-orders/sms-templates', icon: MessageSquare, permission: 'send bulk sms reminders' },
       { title: 'Cost Categories', href: '/pre-orders/costs/categories', icon: FolderKey, permission: 'manage pre-order costs' },
       { title: 'Cost Records', href: '/pre-orders/costs', icon: BarChart3, permission: 'manage pre-order costs' },
+      { title: 'Payment Settings', href: '/pre-order-payment-settings', icon: Settings, permission: 'manage pre-order payment settings' },
     ],
   },
   {

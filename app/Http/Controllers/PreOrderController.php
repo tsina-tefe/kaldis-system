@@ -9,6 +9,7 @@ use App\Models\OrderType;
 use App\Models\PreOrder;
 use App\Models\PreOrderItem;
 use App\Models\PreOrderProduct;
+use App\Models\PreOrderPaymentSetting;
 use App\Models\SmsSettings;
 use App\Notifications\PreOrderCancelledGeezSMSNotification;
 use App\Notifications\PreOrderPaidGeezSMSNotification;
@@ -246,7 +247,8 @@ class PreOrderController extends Controller
                 'create_walkin' => $canCreateWalkin,
                 'create_regular' => $canCreateRegular,
                 'mark_late_payment' => $user->can('mark pre-order late payment'),
-            ]
+            ],
+            'paymentSettings' => \App\Models\PreOrderPaymentSetting::where('is_active', true)->get(['payment_method', 'example']),
         ]);
     }
 
@@ -263,6 +265,14 @@ class PreOrderController extends Controller
             abort(403, 'You do not have permission to create pre-orders.');
         }
 
+        // Extract order type to know if it's implicitly a Paid order (Walkin)
+        $orderType = OrderType::find($request->input('order_type_id'));
+        $isWalkin = $orderType && $orderType->name === 'Walkin Customer';
+        $isPaid = $isWalkin; // In store(), status isn't passed, it relies entirely on order type
+
+        $paymentSettings = PreOrderPaymentSetting::where('is_active', true)->get()->keyBy('payment_method');
+        $validMethods = $paymentSettings->keys()->toArray();
+
         $validated = $request->validate([
             'client_name' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:9', new EthiopianPhoneNumber],
@@ -270,12 +280,35 @@ class PreOrderController extends Controller
             'collection_day_id' => ['required', 'integer', 'exists:collection_days,id'],
             'collection_branch_id' => ['required', 'integer', 'exists:branches,id'],
             'voucher_code' => ['nullable', 'string', 'max:255', 'unique:pre_orders,voucher_code'],
-            'transaction_reference' => ['nullable', 'string', 'max:255', 'unique:pre_orders,transaction_reference'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:pre_order_products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'late_payment' => ['nullable', 'boolean'],
-            'payment_method' => ['nullable', 'string', 'in:Tele Birr,CBE'],
+            'payment_method' => [
+                Rule::requiredIf($isPaid),
+                'nullable',
+                'string',
+                Rule::in($validMethods),
+            ],
+            'transaction_reference' => [
+                Rule::requiredIf($isPaid),
+                'nullable',
+                'string',
+                'max:255',
+                'unique:pre_orders,transaction_reference',
+                function ($attribute, $value, $fail) use ($request, $paymentSettings, $isPaid) {
+                    if (!$isPaid || !$value)
+                        return; // Only validate format if value is provided
+                    $method = $request->input('payment_method');
+                    $setting = $paymentSettings->get($method);
+                    if ($setting && $setting->validation_pattern) {
+                        if (!preg_match('/' . $setting->validation_pattern . '/i', $value)) {
+                            $example = $setting->example ? " Example: {$setting->example}" : "";
+                            $fail("The transaction reference format is invalid for {$method}.{$example}");
+                        }
+                    }
+                },
+            ],
         ]);
 
         // Prepend +251 to phone number (remove any non-digits first)
@@ -466,7 +499,8 @@ class PreOrderController extends Controller
                 'mark_paid' => $user->can('mark pre-order as paid'),
                 'mark_late_payment' => $user->can('mark pre-order late payment'),
                 'can_cancel' => $user->can('cancel pre-orders'),
-            ]
+            ],
+            'paymentSettings' => \App\Models\PreOrderPaymentSetting::where('is_active', true)->get(['payment_method', 'example']),
         ]);
     }
 
@@ -505,6 +539,10 @@ class PreOrderController extends Controller
             abort(403, 'You do not have permission to edit this order.');
         }
 
+        $paymentSettings = PreOrderPaymentSetting::where('is_active', true)->get()->keyBy('payment_method');
+        $validMethods = $paymentSettings->keys()->toArray();
+        $isPaid = in_array($request->input('status'), ['Paid', 'Collected']);
+
         $validated = $request->validate([
             'client_name' => ['required', 'string', 'max:255'],
             'phone_number' => ['required', 'string', 'max:9', new EthiopianPhoneNumber],
@@ -512,13 +550,36 @@ class PreOrderController extends Controller
             'collection_day_id' => ['required', 'integer', 'exists:collection_days,id'],
             'collection_branch_id' => ['required', 'integer', 'exists:branches,id'],
             'voucher_code' => ['nullable', 'string', 'max:255', 'unique:pre_orders,voucher_code,' . $preOrder->id],
-            'transaction_reference' => ['nullable', 'string', 'max:255', 'unique:pre_orders,transaction_reference,' . $preOrder->id],
             'status' => ['required', 'in:Pending,Paid,Collected,Cancelled'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:pre_order_products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'late_payment' => ['nullable', 'boolean'],
-            'payment_method' => ['nullable', 'string', 'in:Tele Birr,CBE', Rule::requiredIf(fn() => in_array($request->input('status'), ['Paid', 'Collected']))],
+            'payment_method' => [
+                Rule::requiredIf($isPaid),
+                'nullable',
+                'string',
+                Rule::in($validMethods),
+            ],
+            'transaction_reference' => [
+                Rule::requiredIf($isPaid),
+                'nullable',
+                'string',
+                'max:255',
+                'unique:pre_orders,transaction_reference,' . $preOrder->id,
+                function ($attribute, $value, $fail) use ($request, $paymentSettings, $isPaid) {
+                    if (!$isPaid || !$value)
+                        return;
+                    $method = $request->input('payment_method');
+                    $setting = $paymentSettings->get($method);
+                    if ($setting && $setting->validation_pattern) {
+                        if (!preg_match('/' . $setting->validation_pattern . '/i', $value)) {
+                            $example = $setting->example ? " Example: {$setting->example}" : "";
+                            $fail("The transaction reference format is invalid for {$method}.{$example}");
+                        }
+                    }
+                },
+            ],
         ]);
 
         // Prepend +251 to phone number (remove any non-digits first)

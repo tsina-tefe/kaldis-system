@@ -52,6 +52,7 @@ type Props = {
         can_cancel: boolean;
         mark_late_payment: boolean;
     };
+    paymentSettings: Array<{ payment_method: string; example: string | null }>;
 };
 
 type OrderItem = {
@@ -59,7 +60,7 @@ type OrderItem = {
     quantity: number;
 };
 
-export default function Edit({ preOrder, branches, collectionDays, orderTypes, products, isRegisteringUser, userPermissions }: Props) {
+export default function Edit({ preOrder, branches, collectionDays, orderTypes, products, isRegisteringUser, userPermissions, paymentSettings }: Props) {
     const { data, setData, put, processing, errors } = useForm<{
         client_name: string;
         phone_number: string;
@@ -409,8 +410,15 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                                         id="transaction_reference"
                                         value={data.transaction_reference}
                                         onChange={(e) => setData('transaction_reference', e.target.value)}
-                                        placeholder="Enter transaction reference"
+                                        placeholder={paymentSettings.find(s => s.payment_method === data.payment_method)?.example
+                                            ? `e.g. ${paymentSettings.find(s => s.payment_method === data.payment_method)?.example}`
+                                            : 'Enter transaction reference'}
                                     />
+                                    {data.payment_method && paymentSettings.find(s => s.payment_method === data.payment_method)?.example && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Expected format example: <code className="bg-muted px-1 rounded">{paymentSettings.find(s => s.payment_method === data.payment_method)?.example}</code>
+                                        </p>
+                                    )}
                                     <InputError message={errors.transaction_reference} />
                                 </div>
                             )}
@@ -424,8 +432,9 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                                             <SelectValue placeholder="Select payment method" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Tele Birr">Tele Birr</SelectItem>
-                                            <SelectItem value="CBE">CBE</SelectItem>
+                                            {paymentSettings.map((s) => (
+                                                <SelectItem key={s.payment_method} value={s.payment_method}>{s.payment_method}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.payment_method} />

@@ -292,7 +292,6 @@ class TicketController extends Controller
             'priorityOptions' => array_column(TicketPriority::cases(), 'value'),
             'assetOptions' => $assetOptions,
             'abilities' => $ticket->getAbilities($user),
-            'hasManagerPower' => $hasManagerPower,
         ]);
     }
 
