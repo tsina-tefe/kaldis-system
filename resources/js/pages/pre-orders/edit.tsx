@@ -335,269 +335,267 @@ export default function Edit({ preOrder, branches, collectionDays, orderTypes, p
                             <InputError message={errors.phone_number} />
                         </div>
                     </div>
-            </div>
+                    {/* Order Status Section */}
+                    <div className="rounded-lg border p-6 space-y-4">
+                        <h3 className="text-lg font-semibold">Order Status</h3>
 
-            {/* Order Status Section */}
-            <div className="rounded-lg border p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Order Status</h3>
-
-                <div className="grid gap-2">
-                    <Label htmlFor="status">Status *</Label>
-                    {preOrder.order_type?.name === 'Walkin Customer' ? (
-                        <div>
-                            <Input
-                                id="status"
-                                value={data.status}
-                                disabled
-                                className="bg-muted"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Status cannot be changed for Walkin Customer orders (already paid)
-                            </p>
-                        </div>
-                    ) : (
-                        <Select
-                            value={data.status}
-                            onValueChange={(value) => setData('status', value)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {filteredStatuses.map((status) => (
-                                    <SelectItem key={status.value} value={status.value}>
-                                        {status.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <InputError message={errors.status} />
-                </div>
-
-
-
-                {userPermissions.mark_late_payment && (
-                    <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox
-                            id="late_payment"
-                            checked={data.late_payment}
-                            onCheckedChange={(checked) => setData('late_payment', checked as boolean)}
-                        />
-                        <Label htmlFor="late_payment" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Mark as Late Payment
-                        </Label>
-                    </div>
-                )}
-            </div>
-
-            {/* Order Details Section */}
-            <div className="rounded-lg border p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Order Details</h3>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
-                        <Label htmlFor="order_type_id">Order Type *</Label>
-                        <Select
-                            value={data.order_type_id}
-                            onValueChange={(value) => setData('order_type_id', value)}
-                            disabled={isOrderTypeDisabled}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select order type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {filteredOrderTypes.map((type) => (
-                                    <SelectItem key={type.id} value={type.id.toString()}>
-                                        {type.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <InputError message={errors.order_type_id} />
-                    </div>
-
-                    {isWalkinCustomer ? (
                         <div className="grid gap-2">
-                            <Label htmlFor="voucher_code">
-                                Voucher Code
-                            </Label>
-                            <Input
-                                id="voucher_code"
-                                value={data.voucher_code}
-                                onChange={(e) => setData('voucher_code', e.target.value)}
-                                placeholder="Enter voucher code"
-                            />
-                            <InputError message={errors.voucher_code} />
-                        </div>
-                    ) : (
-                        <div className="grid gap-2">
-                            <Label htmlFor="transaction_reference">Transaction Reference</Label>
-                            <Input
-                                id="transaction_reference"
-                                value={data.transaction_reference}
-                                onChange={(e) => setData('transaction_reference', e.target.value)}
-                                placeholder={paymentSettings.find(s => s.payment_method === data.payment_method)?.example
-                                    ? `e.g. ${paymentSettings.find(s => s.payment_method === data.payment_method)?.example}`
-                                    : 'Enter transaction reference'}
-                            />
-                            {data.payment_method && paymentSettings.find(s => s.payment_method === data.payment_method)?.example && (
-                                <p className="text-xs text-muted-foreground">
-                                    Expected format example: <code className="bg-muted px-1 rounded">{paymentSettings.find(s => s.payment_method === data.payment_method)?.example}</code>
-                                </p>
-                            )}
-                            <InputError message={errors.transaction_reference} />
-                        </div>
-                    )}
-
-
-                    {!isWalkinCustomer && (
-                        <div className="grid gap-2">
-                            <Label htmlFor="payment_method">Payment Method *</Label>
-                            <Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select payment method" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {paymentSettings.map((s) => (
-                                        <SelectItem key={s.payment_method} value={s.payment_method}>{s.payment_method}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={errors.payment_method} />
-                        </div>
-                    )}
-
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="collection_day_id">Collection Day *</Label>
-                        <Select
-                            value={data.collection_day_id}
-                            onValueChange={(value) => setData('collection_day_id', value)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select collection day" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {collectionDays.map((day) => (
-                                    <SelectItem key={day.id} value={day.id.toString()}>
-                                        {day.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <InputError message={errors.collection_day_id} />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="collection_branch_id">Collection Branch *</Label>
-                        <Select
-                            value={data.collection_branch_id}
-                            onValueChange={(value) => setData('collection_branch_id', value)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select branch" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {branches.map((branch) => (
-                                    <SelectItem key={branch.id} value={branch.id.toString()}>
-                                        {branch.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <InputError message={errors.collection_branch_id} />
-                    </div>
-                </div>
-
-                {preOrder.registering_branch && (
-                    <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                        <Label className="text-sm font-medium">Registering Branch</Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            {preOrder.registering_branch.name}
-                        </p>
-                    </div>
-                )}
-            </div>
-
-            {/* Products Section */}
-            <div className="rounded-lg border p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Products *</h3>
-                <p className="text-sm text-muted-foreground">
-                    {isWalkinCustomer
-                        ? 'Walk-in prices applied. Enter quantity for each product.'
-                        : 'Regular prices applied. Enter quantity for each product.'}
-                </p>
-
-                <div className="rounded-lg border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Product Name</TableHead>
-                                <TableHead>Unit Price</TableHead>
-                                <TableHead className="w-[150px]">Quantity</TableHead>
-                                <TableHead className="text-right">Subtotal</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {products.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                                        No products available. Please add products in settings first.
-                                    </TableCell>
-                                </TableRow>
+                            <Label htmlFor="status">Status *</Label>
+                            {preOrder.order_type?.name === 'Walkin Customer' ? (
+                                <div>
+                                    <Input
+                                        id="status"
+                                        value={data.status}
+                                        disabled
+                                        className="bg-muted"
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Status cannot be changed for Walkin Customer orders (already paid)
+                                    </p>
+                                </div>
                             ) : (
-                                calculations.itemDetails.map((item) => (
-                                    <TableRow key={item.productId}>
-                                        <TableCell className="font-medium">{item.productName}</TableCell>
-                                        <TableCell>ETB {item.unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                value={item.quantity}
-                                                onChange={(e) =>
-                                                    updateQuantity(item.productId, parseInt(e.target.value) || 0)
-                                                }
-                                                className="w-full"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            ETB {item.subtotal.toFixed(2)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                <Select
+                                    value={data.status}
+                                    onValueChange={(value) => setData('status', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {filteredStatuses.map((status) => (
+                                            <SelectItem key={status.value} value={status.value}>
+                                                {status.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             )}
-                            {products.length > 0 && (
-                                <TableRow className="bg-muted/50">
-                                    <TableCell colSpan={3} className="text-right font-bold">
-                                        Total Amount:
-                                    </TableCell>
-                                    <TableCell className="text-right font-bold text-lg">
-                                        ETB {calculations.totalAmount.toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-                <InputError message={errors.items} />
-            </div>
+                            <InputError message={errors.status} />
+                        </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => window.history.back()}
-                >
-                    Cancel
-                </Button>
-                <Button type="submit" disabled={processing || data.items.length === 0}>
-                    Update Pre-Order
-                </Button>
-            </div>
-        </form>
+
+
+                        {userPermissions.mark_late_payment && (
+                            <div className="flex items-center space-x-2 pt-2">
+                                <Checkbox
+                                    id="late_payment"
+                                    checked={data.late_payment}
+                                    onCheckedChange={(checked) => setData('late_payment', checked as boolean)}
+                                />
+                                <Label htmlFor="late_payment" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    Mark as Late Payment
+                                </Label>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Order Details Section */}
+                    <div className="rounded-lg border p-6 space-y-4">
+                        <h3 className="text-lg font-semibold">Order Details</h3>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="order_type_id">Order Type *</Label>
+                                <Select
+                                    value={data.order_type_id}
+                                    onValueChange={(value) => setData('order_type_id', value)}
+                                    disabled={isOrderTypeDisabled}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select order type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {filteredOrderTypes.map((type) => (
+                                            <SelectItem key={type.id} value={type.id.toString()}>
+                                                {type.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.order_type_id} />
+                            </div>
+
+                            {isWalkinCustomer ? (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="voucher_code">
+                                        Voucher Code
+                                    </Label>
+                                    <Input
+                                        id="voucher_code"
+                                        value={data.voucher_code}
+                                        onChange={(e) => setData('voucher_code', e.target.value)}
+                                        placeholder="Enter voucher code"
+                                    />
+                                    <InputError message={errors.voucher_code} />
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="transaction_reference">Transaction Reference</Label>
+                                    <Input
+                                        id="transaction_reference"
+                                        value={data.transaction_reference}
+                                        onChange={(e) => setData('transaction_reference', e.target.value)}
+                                        placeholder={paymentSettings.find(s => s.payment_method === data.payment_method)?.example
+                                            ? `e.g. ${paymentSettings.find(s => s.payment_method === data.payment_method)?.example}`
+                                            : 'Enter transaction reference'}
+                                    />
+                                    {data.payment_method && paymentSettings.find(s => s.payment_method === data.payment_method)?.example && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Expected format example: <code className="bg-muted px-1 rounded">{paymentSettings.find(s => s.payment_method === data.payment_method)?.example}</code>
+                                        </p>
+                                    )}
+                                    <InputError message={errors.transaction_reference} />
+                                </div>
+                            )}
+
+
+                            {!isWalkinCustomer && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="payment_method">Payment Method *</Label>
+                                    <Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select payment method" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {paymentSettings.map((s) => (
+                                                <SelectItem key={s.payment_method} value={s.payment_method}>{s.payment_method}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.payment_method} />
+                                </div>
+                            )}
+
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="collection_day_id">Collection Day *</Label>
+                                <Select
+                                    value={data.collection_day_id}
+                                    onValueChange={(value) => setData('collection_day_id', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select collection day" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {collectionDays.map((day) => (
+                                            <SelectItem key={day.id} value={day.id.toString()}>
+                                                {day.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.collection_day_id} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="collection_branch_id">Collection Branch *</Label>
+                                <Select
+                                    value={data.collection_branch_id}
+                                    onValueChange={(value) => setData('collection_branch_id', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select branch" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {branches.map((branch) => (
+                                            <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                {branch.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.collection_branch_id} />
+                            </div>
+                        </div>
+
+                        {preOrder.registering_branch && (
+                            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                                <Label className="text-sm font-medium">Registering Branch</Label>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {preOrder.registering_branch.name}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Products Section */}
+                    <div className="rounded-lg border p-6 space-y-4">
+                        <h3 className="text-lg font-semibold">Products *</h3>
+                        <p className="text-sm text-muted-foreground">
+                            {isWalkinCustomer
+                                ? 'Walk-in prices applied. Enter quantity for each product.'
+                                : 'Regular prices applied. Enter quantity for each product.'}
+                        </p>
+
+                        <div className="rounded-lg border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Product Name</TableHead>
+                                        <TableHead>Unit Price</TableHead>
+                                        <TableHead className="w-[150px]">Quantity</TableHead>
+                                        <TableHead className="text-right">Subtotal</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {products.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-muted-foreground">
+                                                No products available. Please add products in settings first.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        calculations.itemDetails.map((item) => (
+                                            <TableRow key={item.productId}>
+                                                <TableCell className="font-medium">{item.productName}</TableCell>
+                                                <TableCell>ETB {item.unitPrice.toFixed(2)}</TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        value={item.quantity}
+                                                        onChange={(e) =>
+                                                            updateQuantity(item.productId, parseInt(e.target.value) || 0)
+                                                        }
+                                                        className="w-full"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-right font-medium">
+                                                    ETB {item.subtotal.toFixed(2)}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                    {products.length > 0 && (
+                                        <TableRow className="bg-muted/50">
+                                            <TableCell colSpan={3} className="text-right font-bold">
+                                                Total Amount:
+                                            </TableCell>
+                                            <TableCell className="text-right font-bold text-lg">
+                                                ETB {calculations.totalAmount.toFixed(2)}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <InputError message={errors.items} />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => window.history.back()}
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={processing || data.items.length === 0}>
+                            Update Pre-Order
+                        </Button>
+                    </div>
+                </form>
             </div >
 
             <StatusConfirmationDialog
