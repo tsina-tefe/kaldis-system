@@ -179,6 +179,7 @@ const baseSections: NavSection[] = [
       { title: 'Cost Categories', href: '/pre-orders/costs/categories', icon: FolderKey, permission: 'manage pre-order costs' },
       { title: 'Cost Records', href: '/pre-orders/costs', icon: BarChart3, permission: 'manage pre-order costs' },
       { title: 'Payment Settings', href: '/pre-order-payment-settings', icon: Settings, permission: 'manage pre-order payment settings' },
+      { title: 'Targets', href: '/pre-order-targets', icon: Target, permission: 'manage pre-order targets' },
     ],
   },
   {
