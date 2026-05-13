@@ -118,7 +118,8 @@ type Props = {
 				avg_contribution: number;
 			}>;
 		} | null;
-
+		productByOrderType: ProductByOrderTypeData;
+		productByChannel: ProductByChannelData;
 	};
 	filters: {
 
@@ -146,8 +147,6 @@ type Props = {
 	};
 	targetKpi: TargetKpiEntry[];
 	selectedHolidayName?: string;
-	productByOrderType: ProductByOrderTypeData;
-	productByChannel: ProductByChannelData;
 };
 
 
@@ -156,7 +155,7 @@ type Props = {
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
-export default function DashboardPage({ dashboard, filters, options, auth, targetKpi, selectedHolidayName, productByOrderType, productByChannel }: Props) {
+export default function DashboardPage({ dashboard, filters, options, auth, targetKpi, selectedHolidayName }: Props) {
 	const [activeTab, setActiveTab] = useState('overview');
 
 	useEffect(() => {
@@ -311,8 +310,8 @@ export default function DashboardPage({ dashboard, filters, options, auth, targe
 							productTrend={dashboard.productTrend}
 						/>
 						<ProductAnalyticsTables
-							productByOrderType={productByOrderType}
-							productByChannel={productByChannel}
+							productByOrderType={dashboard.productByOrderType}
+							productByChannel={dashboard.productByChannel}
 						/>
 					</TabsContent>
 
