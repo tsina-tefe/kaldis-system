@@ -227,24 +227,24 @@ export default function DashboardPage({ dashboard, filters, options, auth, targe
 
 				<Tabs defaultValue="overview" className="space-y-6" onValueChange={setActiveTab}>
 					<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-background/95 backdrop-blur py-2 border-b">
-						<TabsList className="bg-muted/50 p-1">
-							<TabsTrigger value="overview" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+						<TabsList className="bg-muted/60 p-1 rounded-lg gap-1">
+							<TabsTrigger value="overview" className="gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:font-semibold">
 								<LayoutDashboard className="w-4 h-4" />
 								<span>Overview</span>
 							</TabsTrigger>
-							<TabsTrigger value="planning" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+							<TabsTrigger value="planning" className="gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:font-semibold">
 								<CalendarRange className="w-4 h-4" />
-								<span>Planning Matrices</span>
+								<span>Production Report</span>
 							</TabsTrigger>
-							<TabsTrigger value="analytics" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+							<TabsTrigger value="analytics" className="gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:font-semibold">
 								<TrendingUp className="w-4 h-4" />
 								<span>Sales Analytics</span>
 							</TabsTrigger>
-							<TabsTrigger value="break-even" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+							<TabsTrigger value="break-even" className="gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:font-semibold">
 								<Target className="w-4 h-4" />
 								<span>Break-Even Analysis</span>
 							</TabsTrigger>
-							<TabsTrigger value="operations" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+							<TabsTrigger value="operations" className="gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:font-semibold">
 								<Users className="w-4 h-4" />
 								<span>Operations</span>
 							</TabsTrigger>
