@@ -1,0 +1,43 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/public_html/kaldis-system
+
+            # Pull latest code
+            git pull origin main
+
+            # Install PHP dependencies
+            composer install --no-dev --optimize-autoloader
+
+            # Install Node dependencies and build
+            source ~/.bashrc
+            npm ci
+            npm run build
+
+            # Run migrations
+            php artisan migrate --force
+
+            # Clear and cache configs
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan cache:clear
+
+            echo "Deployment completed successfully!"
