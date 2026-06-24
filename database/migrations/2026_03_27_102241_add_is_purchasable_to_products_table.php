@@ -8,12 +8,12 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_purchasable')->default(false)->after('status');
-        });
-    }
+   public function up(): void
+{
+    Schema::table('products', function (Blueprint $table) {
+        $table->boolean('is_purchasable')->default(false);
+    });
+}
 
     /**
      * Reverse the migrations.
