@@ -11,17 +11,18 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
+{
+    if (!Schema::hasColumn('pre_order_products', 'walkin_price')) {
         Schema::table('pre_order_products', function (Blueprint $table) {
-            if (!Schema::hasColumn('pre_order_products', 'walkin_price')) {
-                $table->decimal('walkin_price', 10, 2)->after('unit_price')->default(0);
-                // Set walkin_price to match unit_price for existing products
-                DB::table('pre_order_products')->update([
-                    'walkin_price' => DB::raw('unit_price')
-                ]);
-            }
+            $table->decimal('walkin_price', 10, 2)->after('unit_price')->default(0);
         });
+
+        // Set walkin_price to match unit_price for existing products
+        DB::table('pre_order_products')->update([
+            'walkin_price' => DB::raw('unit_price')
+        ]);
     }
+}
 
     /**
      * Reverse the migrations.
