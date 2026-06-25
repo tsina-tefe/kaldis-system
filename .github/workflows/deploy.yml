@@ -10,6 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies and build
+        run: |
+          npm ci
+          npm run build
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -19,25 +32,22 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ~/test.kaldis-system
-
-            # Pull latest code
             git pull origin main
-
-            # Install PHP dependencies
             composer install --no-dev --optimize-autoloader
-
-            # Install Node dependencies and build
-            source ~/.bashrc
-            npm ci
-            NODE_OPTIONS=--max-old-space-size=512 npm run build
-
-            # Run migrations
             php artisan migrate --force
-
-            # Clear and cache configs
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
             php artisan cache:clear
-
             echo "Deployment completed successfully!"
+
+      - name: Upload build assets via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: 'public/build/*'
+          target: '/home/kaldisbp/test.kaldis-system/public/build'
+          strip_components: 2
