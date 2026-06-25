@@ -1,9 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage, Link } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, ShoppingBag, TrendingUp, Users } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
 	{
@@ -35,6 +32,7 @@ export default function Dashboard() {
 									{greeting}, {userName}!
 								</h1>
 								<p className="text-xl text-amber-800 md:text-2xl dark:text-amber-200">Welcome to Kaldi's Coffee</p>
+								<p className="text-xl text-amber-800 md:text-2xl dark:text-amber-200">This is a test dashboard</p>
 								<p className="text-lg text-amber-700 dark:text-amber-300">Sip a Coffee, Make a Memory.</p>
 							</div>
 
