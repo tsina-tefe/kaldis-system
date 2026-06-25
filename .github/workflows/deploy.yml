@@ -18,7 +18,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ~/public_html/kaldis-system
+            cd ~/test.kaldis-system
 
             # Pull latest code
             git pull origin main
