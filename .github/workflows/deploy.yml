@@ -29,7 +29,7 @@ jobs:
             # Install Node dependencies and build
             source ~/.bashrc
             npm ci
-            npm run build
+            NODE_OPTIONS=--max-old-space-size=512 npm run build
 
             # Run migrations
             php artisan migrate --force
